@@ -28,13 +28,13 @@ const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard BI', icon: <LayoutDashboard size={20} /> },
-    { id: 'schedule', label: 'Escala (Pronto)', icon: <FileSpreadsheet size={20} /> },
-    { id: 'agents', label: 'Efetivo', icon: <Users size={20} /> },
-    { id: 'vehicles', label: 'Logística (VTR)', icon: <CarFront size={20} /> },
-    { id: 'imports', label: 'Sincronizar', icon: <History size={20} /> },
-    { id: 'reports', label: 'Relatórios', icon: <FileText size={20} /> },
-    { id: 'admin', label: 'Configurações', icon: <Settings size={20} />, role: UserRole.MANAGER },
+    { id: 'dashboard', label: 'Dashboard BI', Icon: LayoutDashboard },
+    { id: 'schedule', label: 'Escala (Pronto)', Icon: FileSpreadsheet },
+    { id: 'agents', label: 'Efetivo', Icon: Users },
+    { id: 'vehicles', label: 'Logística (VTR)', Icon: CarFront },
+    { id: 'imports', label: 'Sincronizar', Icon: History },
+    { id: 'reports', label: 'Relatórios', Icon: FileText },
+    { id: 'admin', label: 'Configurações', Icon: Settings, role: UserRole.MANAGER },
   ];
 
   if (!isLoggedIn) {
@@ -62,7 +62,6 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
-      {/* Sidebar */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 text-slate-300 transition-all duration-300 ease-in-out transform shadow-2xl
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'}
@@ -91,7 +90,7 @@ const App: React.FC = () => {
                 `}
               >
                 <div className={`${activeTab === item.id ? 'scale-110' : 'group-hover:scale-110 transition-transform'}`}>
-                  {item.icon}
+                  <item.Icon size={20} />
                 </div>
                 <span className={`text-sm tracking-tight transition-opacity ${!isSidebarOpen && 'lg:hidden opacity-0'}`}>
                   {item.label}
@@ -122,7 +121,6 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className={`
         flex-1 flex flex-col min-w-0 transition-all duration-300
         ${isSidebarOpen ? 'lg:ml-72' : 'lg:ml-20'}
