@@ -13,14 +13,14 @@ import {
   LogOut,
   ShieldAlert
 } from 'lucide-react';
-import Dashboard from './components/Dashboard';
-import ScheduleGrid from './components/ScheduleGrid';
-import ImportTool from './components/ImportTool';
-import AgentList from './components/AgentList';
-import VehicleList from './components/VehicleList';
-import Reports from './components/Reports';
-import Login from './components/Login';
-import { UserRole } from './types';
+import Dashboard from './components/Dashboard.tsx';
+import ScheduleGrid from './components/ScheduleGrid.tsx';
+import ImportTool from './components/ImportTool.tsx';
+import AgentList from './components/AgentList.tsx';
+import VehicleList from './components/VehicleList.tsx';
+import Reports from './components/Reports.tsx';
+import Login from './components/Login.tsx';
+import { UserRole } from './types.ts';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');

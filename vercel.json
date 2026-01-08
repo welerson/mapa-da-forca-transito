@@ -1,6 +1,15 @@
 {
   "headers": [
     {
+      "source": "/(.*).ts",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
+      ]
+    },
+    {
       "source": "/(.*).tsx",
       "headers": [
         {
