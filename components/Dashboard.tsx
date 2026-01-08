@@ -1,7 +1,26 @@
 
 import React from 'react';
-import { Users, Car, ShieldAlert, CheckCircle2, TrendingUp, CalendarDays } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { 
+  Users, 
+  Car, 
+  ShieldAlert, 
+  CheckCircle2, 
+  TrendingUp, 
+  CalendarDays, 
+  PieChart as LucidePieChart 
+} from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
 
 const data = [
   { name: 'G050 - Ronda MT', value: 17 },
@@ -15,25 +34,26 @@ const data = [
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1'];
 
 const Dashboard: React.FC = () => {
+  const stats = [
+    { label: 'Efetivo Total', value: '218', sub: '+12 em relação a 2025', Icon: Users, color: 'blue' },
+    { label: 'Em Serviço Hoje', value: '159', sub: '73% do efetivo total', Icon: CheckCircle2, color: 'emerald' },
+    { label: 'VTRs Disponíveis', value: '21', sub: '9 VTR, 9 Moto, 2 Van, 1 Pick', Icon: Car, color: 'amber' },
+    { label: 'Alertas de Escala', value: '4', sub: 'Pendências de CNH/Curso', Icon: ShieldAlert, color: 'red' },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Efetivo Total', value: '218', sub: '+12 em relação a 2025', icon: <Users />, color: 'blue' },
-          { label: 'Em Serviço Hoje', value: '159', sub: '73% do efetivo total', icon: <CheckCircle2 />, color: 'emerald' },
-          { label: 'VTRs Disponíveis', value: '21', sub: '9 VTR, 9 Moto, 2 Van, 1 Pick', icon: <Car />, color: 'amber' },
-          { label: 'Alertas de Escala', value: '4', sub: 'Pendências de CNH/Curso', icon: <ShieldAlert />, color: 'red' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        {stats.map((stat, i) => (
+          <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow text-left">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-500 mb-1">{stat.label}</p>
                 <h3 className="text-2xl font-bold text-slate-800">{stat.value}</h3>
               </div>
               <div className={`p-3 bg-${stat.color}-50 text-${stat.color}-600 rounded-lg`}>
-                {/* Fixed TypeScript error by adding <any> to React.ReactElement cast */}
-                {React.cloneElement(stat.icon as React.ReactElement<any>, { size: 24 })}
+                <stat.Icon size={24} />
               </div>
             </div>
             <div className="mt-4 flex items-center gap-1 text-[11px]">
@@ -46,7 +66,7 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Force Distribution Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-left">
           <div className="flex items-center justify-between mb-6">
             <h4 className="font-bold text-slate-800 flex items-center gap-2">
               <TrendingUp size={18} className="text-blue-600" />
@@ -74,9 +94,9 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Categories Pie */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-left">
           <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <PieChart size={18} className="text-blue-600" />
+            <LucidePieChart size={18} className="text-blue-600" />
             Divisão por Categoria
           </h4>
           <div className="h-[250px] w-full">
@@ -93,7 +113,7 @@ const Dashboard: React.FC = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {COLORS.map((entry, index) => (
+                  {COLORS.slice(0, 3).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry} />
                   ))}
                 </Pie>
@@ -120,7 +140,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Notifications/Alerts */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-left">
         <h4 className="font-bold text-slate-800 mb-4">Alertas do Sistema</h4>
         <div className="space-y-3">
           {[
