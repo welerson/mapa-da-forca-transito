@@ -1,4 +1,3 @@
-
 export enum UserRole {
   MANAGER = 'manager',
   OPERATOR = 'operator',
@@ -15,52 +14,30 @@ export interface UserProfile {
 export type PresenceStatus = 'P' | 'T' | 'D' | 'F' | 'AT' | 'FE' | null;
 
 export interface Agent {
-  id: string; // BM - Badge Number
-  rank: string; // Cargo (GCD I, GCD II, Subinspetor, etc.)
+  id: string; // BM
+  rank: string; // Cargo
   name: string; // Nome Funcional
-  code: string; // CÓD. (G051, G052, etc.)
+  code: string; // CÓD. (Ex: G051)
   location: string; // PRÓPRIO
-  scale: string; // ESCALA (12X36-D1, 5X2, etc.)
-  startTime: string; // INÍCIO
-  endTime: string; // FIM
-  email: string;
-  phone: string;
-  gt?: string; // Group/Team
-  activeStatus?: 'ATIVO' | 'SEM PORTE'; // PORTE
-  cnhCategory?: string; // CNH
-  certified?: boolean; // CREDENCIADO
-  cveCourseStatus?: string; // CURSO CVE
-  pendency?: string; // PENDÊNCIA
-}
-
-export interface DailySchedule {
-  date: string; // ISO string YYYY-MM-DD
-  agentId: string;
-  status: PresenceStatus;
+  scale: string; // ESCALA
+  shift: string; // TURNO
+  status: 'ATIVO' | 'SEM PORTE';
+  cnh: string;
+  course: 'Vigente' | 'Pendente';
+  pendency?: string;
 }
 
 export interface Vehicle {
-  id: string;
-  type: 'VTR' | 'MOTO' | 'VAN' | 'CAMINHONETE';
-  brandModel: string;
   plate: string;
-}
-
-export interface ForceSummary {
-  code: string;
-  name: string;
-  category: 'SUPORTE OPERACIONAL' | 'EQUIPE OPERACIONAL' | 'PROCESSAMENTO AUTO INFRAÇÃO';
-  ranks: {
-    [rank: string]: number;
-  };
-  total: number;
+  type: 'VTR' | 'MOTO' | 'VAN' | 'CAMINHONETE';
+  model: string;
+  status: 'DISPONÍVEL' | 'MANUTENÇÃO' | 'EM USO';
 }
 
 export interface ImportSnapshot {
   id: string;
-  timestamp: number;
-  userId: string;
-  userName: string;
-  description: string;
-  agentCount: number;
+  date: string;
+  user: string;
+  type: 'efetivo' | 'escala' | 'vtrs';
+  count: number;
 }

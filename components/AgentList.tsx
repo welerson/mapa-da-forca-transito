@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Plus, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Search, Filter, MoreVertical, Plus, CheckCircle2, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AgentList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,7 +16,7 @@ const AgentList: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
+        <div className="text-left">
           <h3 className="text-xl font-bold text-slate-800">Cadastro de Efetivo</h3>
           <p className="text-sm text-slate-500">Gerenciamento detalhado de credenciamento e cursos.</p>
         </div>
@@ -113,9 +113,9 @@ const AgentList: React.FC = () => {
 
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-center">
           <div className="flex items-center gap-1">
-            <button className="p-2 text-slate-400 disabled:opacity-30" disabled><Plus size={16} /></button>
+            <button className="p-2 text-slate-400 disabled:opacity-30" disabled><ChevronLeft size={16} /></button>
             <span className="text-xs text-slate-500 px-4">Página 1 de 1</span>
-            <button className="p-2 text-slate-400 disabled:opacity-30" disabled><Plus size={16} /></button>
+            <button className="p-2 text-slate-400 disabled:opacity-30" disabled><ChevronRight size={16} /></button>
           </div>
         </div>
       </div>

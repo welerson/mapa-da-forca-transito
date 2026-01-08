@@ -1,130 +1,102 @@
-
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, Filter, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Download, Filter, Calendar as CalendarIcon } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS } from '../constants';
 
 const ScheduleGrid: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Mock data representing the "PRONTO 2026" sheet
-  const days = Array.from({ length: 13 }, (_, i) => i + 1);
-  const sections = [
-    {
-      title: 'NOTURNA DOBRA 02 - G051 PA CETRAN',
-      agents: [
-        { bm: '86999-X', rank: 'GCD II', name: 'SILVA GONZAGA', code: 'G051', shift: '19:30-07:30', schedule: ['P', 'P', '', '', 'P', 'P', 'P', 'P', '', '', 'P', 'P', 'P'] },
-        { bm: '99246-5', rank: 'GCD II', name: 'VINICIUS CHAVES', code: 'G051', shift: '07:30-19:30', schedule: ['P', 'P', 'FE', 'FE', 'P', 'P', 'P', 'P', '', '', 'P', 'P', 'P'] },
-        { bm: '80104-X', rank: 'GCD I', name: 'DE OLIVEIRA', code: 'G051', shift: '19:30-07:30', schedule: ['P', 'P', '', '', 'P', 'P', 'P', 'P', '', '', 'P', 'P', 'P'] },
-      ]
-    },
-    {
-      title: 'G054 - ROTATIVO DOBRA 01',
-      agents: [
-        { bm: '86054-2', rank: 'GCD II', name: 'DEOLINDO', code: 'G054', shift: '07:00-19:00', schedule: ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
-        { bm: '87032-7', rank: 'GCD II', name: 'IRAN CARLOS', code: 'G054', shift: '06:30-18:30', schedule: ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
-      ]
-    }
+  const days = Array.from({ length: 15 }, (_, i) => i + 1);
+
+  const mockData = [
+    { bm: '86999-X', rank: 'GCD II', name: 'SILVA GONZAGA', code: 'G051', shift: '07:30-19:30', schedule: ['P', 'P', '', '', 'P', 'P', 'P', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE'] },
+    { bm: '99246-5', rank: 'GCD II', name: 'VINICIUS CHAVES', code: 'G051', shift: '19:30-07:30', schedule: ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', '', '', 'P', 'P', 'P', 'P', 'P'] },
+    { bm: '80104-X', rank: 'GCD I', name: 'DE OLIVEIRA', code: 'G054', shift: '07:00-19:00', schedule: ['P', 'P', 'AT', 'AT', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
+    { bm: '86054-2', rank: 'GCD II', name: 'DEOLINDO', code: 'G054', shift: '06:30-18:30', schedule: ['P', 'P', 'F', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
-      <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex bg-white rounded-lg border border-slate-200 p-1">
-            <button className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-500"><ChevronLeft size={18} /></button>
-            <div className="px-3 flex items-center text-sm font-bold text-slate-700">Janeiro 2026</div>
-            <button className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-500"><ChevronRight size={18} /></button>
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+      <div className="p-5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-white rounded-xl border border-slate-200 p-1.5 shadow-sm">
+            <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"><ChevronLeft size={18} /></button>
+            <span className="px-4 font-bold text-sm text-slate-700">Janeiro 2026</span>
+            <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"><ChevronRight size={18} /></button>
           </div>
-          <div className="h-8 w-px bg-slate-200 mx-1"></div>
-          <div className="flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-3 ml-4">
             {Object.entries(STATUS_LABELS).map(([code, label]) => (
-              <div key={code} className="flex items-center gap-1">
-                <div className={`w-3 h-3 rounded-sm ${STATUS_COLORS[code]}`}></div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase">{code}</span>
+              <div key={code} className="flex items-center gap-1.5 px-2 py-1 bg-white border border-slate-100 rounded-lg shadow-sm">
+                <div className={`w-3 h-3 rounded-full ${STATUS_COLORS[code]}`}></div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{code}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-3 ml-auto">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text" 
-              placeholder="Buscar por BM ou Nome..."
-              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Pesquisar Agente..."
+              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm w-64 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="p-2 border border-slate-200 rounded-lg hover:bg-white transition-colors text-slate-600"><Filter size={18} /></button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-            <Download size={16} /> Exportar PDF
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md">
+            <Download size={16} /> Exportar
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        <table className="w-full border-collapse text-left text-xs">
+      <div className="flex-1 overflow-auto custom-scrollbar">
+        <table className="w-full border-collapse text-left">
           <thead className="sticky top-0 z-20 bg-slate-900 text-slate-300">
-            <tr>
-              <th className="p-3 border-r border-slate-800 font-bold w-24">BM</th>
-              <th className="p-3 border-r border-slate-800 font-bold w-20">CARGO</th>
-              <th className="p-3 border-r border-slate-800 font-bold min-w-[150px]">NOME FUNCIONAL</th>
-              <th className="p-3 border-r border-slate-800 font-bold w-12">CÓD.</th>
-              <th className="p-3 border-r border-slate-800 font-bold w-28 text-center">TURNO</th>
-              {days.map(day => (
-                <th key={day} className={`p-1 border-r border-slate-800 text-center w-8 ${day === 8 ? 'bg-cyan-700 text-white' : ''}`}>
-                  <div className="text-[8px] uppercase font-medium">{['qui','sex','sáb','dom','seg','ter','qua','qui','sex','sáb','dom','seg','ter'][(day-1)%7]}</div>
-                  <div className="text-[11px] font-bold">{day < 10 ? `0${day}` : day}</div>
+            <tr className="text-[10px] font-bold uppercase tracking-widest">
+              <th className="p-4 border-r border-slate-800 w-24">BM</th>
+              <th className="p-4 border-r border-slate-800 min-w-[180px]">NOME FUNCIONAL</th>
+              <th className="p-4 border-r border-slate-800 w-20 text-center">SETOR</th>
+              <th className="p-4 border-r border-slate-800 w-32 text-center">TURNO</th>
+              {days.map(d => (
+                <th key={d} className={`p-1 border-r border-slate-800 text-center w-10 ${d === 8 ? 'bg-blue-600 text-white' : ''}`}>
+                  <div className="text-[8px] opacity-60">DOM</div>
+                  <div className="text-xs">{d < 10 ? `0${d}` : d}</div>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
-            {sections.map((section, idx) => (
-              <React.Fragment key={idx}>
-                <tr className="bg-slate-100 font-bold text-slate-700">
-                  <td colSpan={5 + days.length} className="px-4 py-2 border-b border-slate-200">
-                    {section.title}
+          <tbody className="text-xs">
+            {mockData.map((row, i) => (
+              <tr key={i} className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
+                <td className="p-4 border-r border-slate-100 font-mono text-slate-400 font-medium">{row.bm}</td>
+                <td className="p-4 border-r border-slate-100">
+                  <p className="font-bold text-slate-800 uppercase tracking-tight">{row.name}</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{row.rank}</p>
+                </td>
+                <td className="p-4 border-r border-slate-100 text-center font-black text-slate-500">{row.code}</td>
+                <td className="p-4 border-r border-slate-100 text-center text-[10px] font-medium text-slate-400">{row.shift}</td>
+                {row.schedule.map((status, idx) => (
+                  <td key={idx} className={`border-r border-slate-100 p-0 ${idx === 7 ? 'bg-blue-50/50' : ''}`}>
+                    {status && (
+                      <div className={`w-full h-10 flex items-center justify-center font-black text-[10px] ${STATUS_COLORS[status]}`}>
+                        {status}
+                      </div>
+                    )}
                   </td>
-                </tr>
-                {section.agents.map((agent, aIdx) => (
-                  <tr key={aIdx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="p-3 border-r border-slate-100 font-mono text-slate-600">{agent.bm}</td>
-                    <td className="p-3 border-r border-slate-100 font-medium text-slate-500">{agent.rank}</td>
-                    <td className="p-3 border-r border-slate-100 font-bold text-slate-800 uppercase">{agent.name}</td>
-                    <td className="p-3 border-r border-slate-100 text-center text-slate-500 font-bold">{agent.code}</td>
-                    <td className="p-3 border-r border-slate-100 text-center text-slate-400 font-medium text-[10px]">{agent.shift}</td>
-                    {agent.schedule.map((status, sIdx) => (
-                      <td key={sIdx} className={`border-r border-slate-100 text-center p-0 ${sIdx === 7 ? 'bg-cyan-50' : ''}`}>
-                        {status && (
-                          <div className={`w-full h-8 flex items-center justify-center font-black text-[10px] ${STATUS_COLORS[status] || ''}`}>
-                            {status}
-                          </div>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
                 ))}
-              </React.Fragment>
+              </tr>
             ))}
           </tbody>
         </table>
       </div>
-      
-      <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-        <p className="text-[11px] text-slate-500 font-medium">
-          Mostrando 2 setores operacionais • Escala validada em: 08/01/2026 09:15
-        </p>
-        <div className="flex gap-2">
-           <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded text-[10px] text-slate-600">
-              <span className="font-bold text-green-600">68</span> Presentes
-           </div>
-           <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded text-[10px] text-slate-600">
-              <span className="font-bold text-red-600">2</span> Faltas
-           </div>
+
+      <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+        <div className="flex gap-4">
+          <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> 142 Presentes</span>
+          <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500"></div> 04 Faltas</span>
+          <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-indigo-500"></div> 12 Férias</span>
         </div>
+        <p>Última Atualização: Hoje às 10:22</p>
       </div>
     </div>
   );

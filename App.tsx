@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
@@ -12,155 +11,151 @@ import {
   Menu,
   X,
   LogOut,
-  ChevronRight
+  ShieldAlert
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
-import AgentList from './components/AgentList';
-import VehicleList from './components/VehicleList';
 import ScheduleGrid from './components/ScheduleGrid';
 import ImportTool from './components/ImportTool';
+import AgentList from './components/AgentList';
+import VehicleList from './components/VehicleList';
 import Reports from './components/Reports';
 import Login from './components/Login';
-import { UserRole, UserProfile } from './types';
+import { UserRole } from './types';
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-
-  const handleLogin = (email: string) => {
-    setCurrentUser({
-      uid: '1',
-      email: email,
-      name: email.split('@')[0].toUpperCase(),
-      role: UserRole.MANAGER
-    });
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-  };
-
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { id: 'dashboard', label: 'Dashboard BI', icon: <LayoutDashboard size={20} /> },
     { id: 'schedule', label: 'Escala (Pronto)', icon: <FileSpreadsheet size={20} /> },
     { id: 'agents', label: 'Efetivo', icon: <Users size={20} /> },
-    { id: 'vehicles', label: 'Viaturas (VTRs)', icon: <CarFront size={20} /> },
+    { id: 'vehicles', label: 'Logística (VTR)', icon: <CarFront size={20} /> },
+    { id: 'imports', label: 'Sincronizar', icon: <History size={20} /> },
     { id: 'reports', label: 'Relatórios', icon: <FileText size={20} /> },
-    { id: 'imports', label: 'Importações', icon: <History size={20} />, role: [UserRole.MANAGER, UserRole.OPERATOR] },
-    { id: 'audit', label: 'Auditoria', icon: <ShieldCheck size={20} />, role: [UserRole.MANAGER] },
-    { id: 'config', label: 'Configurações', icon: <Settings size={20} />, role: [UserRole.MANAGER] },
+    { id: 'admin', label: 'Configurações', icon: <Settings size={20} />, role: UserRole.MANAGER },
   ];
 
-  const filteredMenu = menuItems.filter(item => !item.role || (currentUser && item.role.includes(currentUser.role)));
+  if (!isLoggedIn) {
+    return <Login onLogin={() => setIsLoggedIn(true)} />;
+  }
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
+      case 'schedule': return <ScheduleGrid />;
       case 'agents': return <AgentList />;
       case 'vehicles': return <VehicleList />;
-      case 'schedule': return <ScheduleGrid />;
       case 'imports': return <ImportTool />;
       case 'reports': return <Reports />;
-      default: return <div className="p-8 text-slate-500">Módulo em desenvolvimento...</div>;
+      default: return (
+        <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 fade-in">
+          <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center">
+            <ShieldAlert size={40} />
+          </div>
+          <p className="font-bold uppercase tracking-widest text-xs">Módulo em Desenvolvimento</p>
+        </div>
+      );
     }
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      {/* Mobile Menu Toggle */}
-      <button 
-        className="fixed top-4 left-4 z-50 p-2 bg-slate-900 text-white rounded-md md:hidden"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
       {/* Sidebar */}
-      <aside 
-        className={`
-          fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 transition-transform duration-300 transform md:relative md:translate-x-0
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 text-slate-300 transition-all duration-300 ease-in-out transform shadow-2xl
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'}
+      `}>
         <div className="flex flex-col h-full">
-          <div className="p-6 border-b border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                DCO
-              </div>
-              <div>
-                <h1 className="text-white font-bold text-sm leading-tight">Mapa da Força</h1>
-                <p className="text-[10px] uppercase tracking-wider text-slate-500">Gestão Operacional</p>
-              </div>
+          <div className="p-8 border-b border-slate-800/50 flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shrink-0">
+              DCO
+            </div>
+            <div className={`transition-opacity duration-200 ${!isSidebarOpen && 'lg:hidden opacity-0'}`}>
+              <h1 className="text-white font-bold text-lg tracking-tight">Mapa da Força</h1>
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-500">Trânsito v2.0</p>
             </div>
           </div>
 
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {filteredMenu.map((item) => (
+          <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto custom-scrollbar">
+            {menuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={`
-                  w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                  w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 group
                   ${activeTab === item.id 
-                    ? 'bg-blue-600 text-white font-medium' 
-                    : 'hover:bg-slate-800 hover:text-white'}
+                    ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-900/40' 
+                    : 'hover:bg-slate-800/50 hover:text-white'}
                 `}
               >
-                {item.icon}
-                <span className="text-sm">{item.label}</span>
-                {activeTab === item.id && <ChevronRight size={14} className="ml-auto" />}
+                <div className={`${activeTab === item.id ? 'scale-110' : 'group-hover:scale-110 transition-transform'}`}>
+                  {item.icon}
+                </div>
+                <span className={`text-sm tracking-tight transition-opacity ${!isSidebarOpen && 'lg:hidden opacity-0'}`}>
+                  {item.label}
+                </span>
+                {activeTab === item.id && isSidebarOpen && <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full"></div>}
               </button>
             ))}
           </nav>
 
-          <div className="p-4 border-t border-slate-800 bg-slate-950">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs text-white">
-                {currentUser?.name.substring(0, 2)}
+          <div className="p-6 border-t border-slate-800/50 bg-slate-950/30">
+            <div className={`flex items-center gap-4 mb-6 ${!isSidebarOpen && 'lg:justify-center'}`}>
+              <div className="w-10 h-10 rounded-2xl bg-slate-700 flex items-center justify-center font-bold text-white shrink-0">
+                G
               </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-xs text-white font-medium truncate">{currentUser?.name}</p>
-                <p className="text-[10px] text-slate-500 truncate">{currentUser?.email}</p>
+              <div className={`transition-opacity ${!isSidebarOpen && 'lg:hidden opacity-0'}`}>
+                <p className="text-sm font-bold text-white">Gestor DCO</p>
+                <p className="text-[10px] text-slate-500 uppercase font-bold">Admin Master</p>
               </div>
             </div>
             <button 
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors"
+              onClick={() => setIsLoggedIn(false)}
+              className="w-full flex items-center gap-4 px-4 py-3 text-slate-500 hover:text-rose-400 transition-colors group"
             >
-              <LogOut size={14} /> Sair do Sistema
+              <LogOut size={18} />
+              <span className={`text-xs font-bold uppercase tracking-widest ${!isSidebarOpen && 'lg:hidden opacity-0'}`}>Sair</span>
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-          <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 capitalize">
-            {activeTab.replace('_', ' ')}
-          </h2>
+      <main className={`
+        flex-1 flex flex-col min-w-0 transition-all duration-300
+        ${isSidebarOpen ? 'lg:ml-72' : 'lg:ml-20'}
+      `}>
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40">
           <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="text-xs text-slate-500 font-medium uppercase">Mapa da Força</p>
-              <p className="text-xs text-slate-400">Ambiente de Operação</p>
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-500 transition-all border border-slate-200"
+            >
+              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <div className="text-left">
+              <h2 className="text-lg font-bold text-slate-800 capitalize leading-none">
+                {activeTab.replace('_', ' ')}
+              </h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">DCO • SISTEMA OPERACIONAL</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:block text-right">
+              <p className="text-xs font-bold text-slate-800 uppercase">Homologação 2026</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jan, 08 - 14:45</p>
             </div>
             <div className="h-8 w-px bg-slate-200 mx-2"></div>
-            <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
               <ShieldCheck size={20} />
-            </button>
+            </div>
           </div>
         </header>
 
-        <section className="flex-1 overflow-y-auto bg-slate-50 p-6 md:p-8">
+        <section className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           {renderContent()}
         </section>
       </main>

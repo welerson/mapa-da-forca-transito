@@ -1,14 +1,19 @@
-
 import React, { useState } from 'react';
-import { Upload, FileText, CheckCircle, AlertCircle, RefreshCw, ClipboardPaste } from 'lucide-react';
+import { Upload, FileText, CheckCircle, ClipboardPaste, RefreshCw, AlertCircle, ShieldCheck } from 'lucide-react';
 
 const ImportTool: React.FC = () => {
   const [step, setStep] = useState(1);
-  const [importType, setImportType] = useState<'agents' | 'schedule' | 'vehicles'>('agents');
   const [pastedData, setPastedData] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const steps = [
+    { id: 1, label: 'Origem', Icon: FileText },
+    { id: 2, label: 'Análise', Icon: RefreshCw },
+    { id: 3, label: 'Finalizar', Icon: ShieldCheck },
+  ];
+
   const handleProcess = () => {
+    if (!pastedData.trim()) return;
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
@@ -17,105 +22,101 @@ const ImportTool: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+    <div className="max-w-5xl mx-auto space-y-6 text-left fade-in">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h3 className="text-lg font-bold text-slate-800">Importação de Dados</h3>
-            <p className="text-sm text-slate-500">Importe dados da planilha Mapa da Força para o sistema.</p>
+            <h3 className="text-2xl font-bold text-slate-800 tracking-tight">Pipeline de Dados</h3>
+            <p className="text-slate-500 text-sm">Sincronização via Snapshots de Planilha.</p>
           </div>
-          <div className="flex items-center gap-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs
-                ${step === i ? 'bg-blue-600 text-white' : step > i ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
-                {step > i ? <CheckCircle size={14} /> : i}
+          <div className="flex items-center gap-4">
+            {steps.map((s) => (
+              <div key={s.id} className="flex flex-col items-center gap-1.5">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all
+                  ${step >= s.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                  {step > s.id ? <CheckCircle size={18} /> : <s.Icon size={18} className={step === s.id ? 'animate-pulse' : ''} />}
+                </div>
+                <span className={`text-[9px] font-bold uppercase tracking-widest ${step >= s.id ? 'text-blue-600' : 'text-slate-300'}`}>
+                  {s.label}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-10">
           {step === 1 && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-8 slide-up">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { id: 'agents', label: 'Efetivo/Cadastro', desc: 'Dados da aba TRÂNSITO', icon: <FileText /> },
-                  { id: 'schedule', label: 'Escala Mensal', desc: 'Dados da aba PRONTO', icon: <ClipboardPaste /> },
-                  { id: 'vehicles', label: 'Logística/VTR', desc: 'Dados da aba VTRS', icon: <Upload /> },
-                ].map(type => (
-                  <button
-                    key={type.id}
-                    onClick={() => setImportType(type.id as any)}
-                    className={`p-4 rounded-xl border-2 transition-all text-left
-                      ${importType === type.id ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
-                  >
-                    <div className={`mb-3 ${importType === type.id ? 'text-blue-600' : 'text-slate-400'}`}>
-                      {type.icon}
-                    </div>
-                    <div className={`text-sm font-bold ${importType === type.id ? 'text-blue-900' : 'text-slate-700'}`}>
-                      {type.label}
-                    </div>
-                    <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-tight">{type.desc}</div>
+                  { title: 'Efetivo Geral', sub: 'Aba TRÂNSITO' },
+                  { title: 'Escala Mensal', sub: 'Aba PRONTO 2026' },
+                  { title: 'Logística VTR', sub: 'Aba VTRS' },
+                ].map((t, i) => (
+                  <button key={i} className="p-6 rounded-2xl border border-slate-200 hover:border-blue-600 hover:bg-blue-50 transition-all text-left">
+                    <h5 className="font-bold text-slate-800">{t.title}</h5>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t.sub}</p>
                   </button>
                 ))}
               </div>
 
               <div className="space-y-3">
-                <label className="text-sm font-bold text-slate-700 block">Dados da Planilha (Cole aqui):</label>
-                <textarea 
-                  className="w-full h-64 p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                  placeholder="Selecione as colunas na planilha, copie e cole aqui..."
-                  value={pastedData}
-                  onChange={(e) => setPastedData(e.target.value)}
-                />
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Colar Dados da Planilha:</label>
+                <div className="relative group">
+                  <textarea 
+                    className="w-full h-64 p-5 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none custom-scrollbar"
+                    placeholder="Selecione os dados no Excel (BM, Nome, Turno...) e cole aqui..."
+                    value={pastedData}
+                    onChange={(e) => setPastedData(e.target.value)}
+                  />
+                  {!pastedData && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
+                      <ClipboardPaste size={48} className="text-slate-900" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end">
                 <button 
-                  disabled={!pastedData || isProcessing}
+                  disabled={!pastedData.trim() || isProcessing}
                   onClick={handleProcess}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-10 py-3.5 bg-blue-600 text-white rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center gap-3"
                 >
-                  {isProcessing ? <RefreshCw className="animate-spin" size={18} /> : 'Processar Dados'}
+                  {isProcessing ? <RefreshCw className="animate-spin" size={18} /> : 'Processar Snapshot'}
                 </button>
               </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="space-y-6">
-              <div className="p-4 bg-green-50 border border-green-100 rounded-lg flex items-center gap-3">
-                <CheckCircle className="text-green-600" />
-                <div className="text-sm">
-                  <p className="font-bold text-green-800">Dados analisados com sucesso!</p>
-                  <p className="text-green-700">Detectamos 48 registros prontos para importação.</p>
+            <div className="space-y-6 slide-up">
+              <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-4">
+                <div className="w-10 h-10 bg-emerald-500 text-white rounded-lg flex items-center justify-center">
+                  <CheckCircle size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-emerald-900 uppercase text-xs tracking-widest">Análise Concluída</h4>
+                  <p className="text-emerald-700 text-xs">Identificamos 52 registros válidos. Nenhuma duplicidade encontrada.</p>
                 </div>
               </div>
 
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <div className="max-h-96 overflow-y-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 sticky top-0">
+              <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50">
+                <div className="max-h-72 overflow-y-auto custom-scrollbar">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-white sticky top-0 border-b border-slate-200 z-10">
                       <tr>
-                        <th className="p-3 border-b">Status</th>
-                        <th className="p-3 border-b">BM</th>
-                        <th className="p-3 border-b">Nome</th>
-                        <th className="p-3 border-b">Código</th>
-                        <th className="p-3 border-b">Pendência</th>
+                        <th className="p-4 font-bold uppercase text-slate-400 tracking-wider">BM</th>
+                        <th className="p-4 font-bold uppercase text-slate-400 tracking-wider">Agente</th>
+                        <th className="p-4 font-bold uppercase text-slate-400 tracking-wider">Status</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-white">
                       {[1, 2, 3, 4, 5].map(i => (
-                        <tr key={i} className="border-b border-slate-50">
-                          <td className="p-3"><CheckCircle size={14} className="text-green-500" /></td>
-                          <td className="p-3 font-mono text-slate-600">86054-2</td>
-                          <td className="p-3 font-bold text-slate-800">DEOLINDO</td>
-                          <td className="p-3 text-slate-500">G054</td>
-                          <td className="p-3">
-                            {i === 3 ? (
-                              <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded text-[9px] font-bold">CNH VENCIDA</span>
-                            ) : '-'}
-                          </td>
+                        <tr key={i} className="hover:bg-white transition-colors">
+                          <td className="p-4 font-mono font-bold text-slate-500">86054-2</td>
+                          <td className="p-4 font-bold text-slate-800 uppercase">AGENTE EXEMPLO {i}</td>
+                          <td className="p-4"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[9px] font-bold">VÁLIDO</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -123,53 +124,43 @@ const ImportTool: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center">
-                <button onClick={() => setStep(1)} className="text-sm text-slate-500 hover:text-slate-800 font-medium">Voltar</button>
-                <div className="flex gap-3">
-                  <button className="px-6 py-2 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50">Descartar</button>
-                  <button onClick={() => setStep(3)} className="px-8 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">Confirmar Snapshot</button>
-                </div>
+              <div className="flex justify-between items-center pt-4">
+                <button onClick={() => setStep(1)} className="text-xs font-bold text-slate-400 hover:text-slate-800 transition-colors uppercase tracking-widest">Voltar</button>
+                <button onClick={() => setStep(3)} className="px-10 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-black transition-all shadow-lg">
+                  Confirmar e Gravar
+                </button>
               </div>
             </div>
           )}
 
           {step === 3 && (
-            <div className="py-12 flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
-                <CheckCircle size={40} />
+            <div className="py-16 flex flex-col items-center text-center slide-up">
+              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
+                <ShieldCheck size={40} />
               </div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-2">Snapshot Gerado!</h3>
-              <p className="text-slate-500 max-w-sm mb-8">
-                A importação foi concluída e o sistema já refletiu as mudanças nos dashboards e relatórios.
+              <h3 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">Snapshot Gravado!</h3>
+              <p className="text-slate-500 max-w-sm text-sm mb-10">
+                O banco de dados foi atualizado com sucesso. O BI já reflete as novas informações.
               </p>
               <div className="flex gap-4">
-                <button onClick={() => setStep(1)} className="px-6 py-2 border border-slate-200 rounded-lg text-sm font-medium">Nova Importação</button>
-                <button className="px-6 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold">Ver Histórico</button>
+                <button onClick={() => {setStep(1); setPastedData('');}} className="px-8 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all">Nova Importação</button>
+                <button onClick={() => setStep(1)} className="px-8 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg">Ver Painel</button>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <AlertCircle size={18} className="text-blue-600" />
-          Instruções de Importação
-        </h4>
-        <ul className="space-y-2 text-sm text-slate-600">
-          <li className="flex gap-2">
-            <span className="w-5 h-5 bg-slate-100 rounded flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
-            Selecione o intervalo de células na planilha (Ex: BM até Contato).
-          </li>
-          <li className="flex gap-2">
-            <span className="w-5 h-5 bg-slate-100 rounded flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
-            Copie (Ctrl+C) e cole no campo acima (Ctrl+V).
-          </li>
-          <li className="flex gap-2">
-            <span className="w-5 h-5 bg-slate-100 rounded flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
-            O sistema validará duplicidades e pendências operacionais automaticamente.
-          </li>
-        </ul>
+      <div className="bg-slate-900 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center gap-6 border border-slate-800">
+        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <AlertCircle size={24} />
+        </div>
+        <div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-blue-400">Dica de Importação</h4>
+          <p className="text-slate-400 text-xs font-medium leading-relaxed max-w-2xl mt-1">
+            Mantenha os cabeçalhos das colunas (BM, NOME, TURNO) para que o sistema identifique automaticamente a estrutura dos dados colados.
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   FileText, 
@@ -12,29 +11,39 @@ import {
   Activity,
   History,
   AlertOctagon,
-  FileCheck
+  FileCheck,
+  LucideIcon
 } from 'lucide-react';
 
-const reportCatalog = [
-  { id: 1, title: 'Mapa da Força (2025/26/27)', desc: 'Visão geral por setor e projeção anual', icon: <FileText className="text-blue-500" />, filters: ['Ano', 'Setor'] },
-  { id: 2, title: 'Efetivo vs. Necessidade', desc: 'Identificação de gaps por turno e unidade', icon: <TrendingUp className="text-red-500" />, filters: ['Unidade', 'Turno'] },
-  { id: 3, title: 'Distribuição por Serviço', desc: 'Trânsito, UPA, ADM, GT, etc.', icon: <Activity className="text-amber-500" />, filters: ['Tipo de Serviço'] },
-  { id: 4, title: 'Disponibilidade de VTRs', desc: 'Cobertura por turno e status da frota', icon: <ExternalLink className="text-indigo-500" />, filters: ['Tipo VTR', 'Turno'] },
-  { id: 5, title: 'Equipamentos (EQP)', desc: 'Previsão vs. Necessidade vs. Defasagem', icon: <Shield className="text-slate-600" />, filters: ['Equipamento'] },
-  { id: 6, title: 'Auditoria de Escala', desc: 'Conflitos, frequência e causas prováveis', icon: <AlertOctagon className="text-purple-500" />, filters: ['Período'] },
-  { id: 7, title: 'Operações Especiais', desc: 'Impacto e recomposição (Carnaval, etc.)', icon: <Map className="text-emerald-500" />, filters: ['Evento'] },
-  { id: 8, title: 'Cobertura de UPAs', desc: 'Nível de atendimento e mapa de postos', icon: <Shield className="text-blue-600" />, filters: ['Unidade de Saúde'] },
-  { id: 9, title: 'Indicadores Operacionais', desc: 'Produtividade e KPIs derivados', icon: <TrendingUp className="text-rose-500" />, filters: ['KPI', 'Mês'] },
-  { id: 10, title: 'Comparativo de Períodos', desc: 'Evolução mensal e entre turnos', icon: <History className="text-slate-400" />, filters: ['Início', 'Fim'] },
-  { id: 11, title: 'Relatório Executivo (1 Pág)', desc: 'Resumo para Comando com alertas', icon: <FileCheck className="text-slate-900" />, filters: ['Geral'] },
-  { id: 12, title: 'Diff de Snapshots', desc: 'Mudanças entre importações e auditoria', icon: <History className="text-cyan-600" />, filters: ['Snapshot A', 'Snapshot B'] },
+interface ReportItem {
+  id: number;
+  title: string;
+  desc: string;
+  Icon: LucideIcon;
+  iconColor: string;
+  filters: string[];
+}
+
+const reportCatalog: ReportItem[] = [
+  { id: 1, title: 'Mapa da Força (2025/26/27)', desc: 'Visão geral por setor e projeção anual', Icon: FileText, iconColor: 'text-blue-500', filters: ['Ano', 'Setor'] },
+  { id: 2, title: 'Efetivo vs. Necessidade', desc: 'Identificação de gaps por turno e unidade', Icon: TrendingUp, iconColor: 'text-red-500', filters: ['Unidade', 'Turno'] },
+  { id: 3, title: 'Distribuição por Serviço', desc: 'Trânsito, UPA, ADM, GT, etc.', Icon: Activity, iconColor: 'text-amber-500', filters: ['Tipo de Serviço'] },
+  { id: 4, title: 'Disponibilidade de VTRs', desc: 'Cobertura por turno e status da frota', Icon: ExternalLink, iconColor: 'text-indigo-500', filters: ['Tipo VTR', 'Turno'] },
+  { id: 5, title: 'Equipamentos (EQP)', desc: 'Previsão vs. Necessidade vs. Defasagem', Icon: Shield, iconColor: 'text-slate-600', filters: ['Equipamento'] },
+  { id: 6, title: 'Auditoria de Escala', desc: 'Conflitos, frequência e causas prováveis', Icon: AlertOctagon, iconColor: 'text-purple-500', filters: ['Período'] },
+  { id: 7, title: 'Operações Especiais', desc: 'Impacto e recomposição (Carnaval, etc.)', Icon: Map, iconColor: 'text-emerald-500', filters: ['Evento'] },
+  { id: 8, title: 'Cobertura de UPAs', desc: 'Nível de atendimento e mapa de postos', Icon: Shield, iconColor: 'text-blue-600', filters: ['Unidade de Saúde'] },
+  { id: 9, title: 'Indicadores Operacionais', desc: 'Produtividade e KPIs derivados', Icon: TrendingUp, iconColor: 'text-rose-500', filters: ['KPI', 'Mês'] },
+  { id: 10, title: 'Comparativo de Períodos', desc: 'Evolução mensal e entre turnos', Icon: History, iconColor: 'text-slate-400', filters: ['Início', 'Fim'] },
+  { id: 11, title: 'Relatório Executivo (1 Pág)', desc: 'Resumo para Comando com alertas', Icon: FileCheck, iconColor: 'text-slate-900', filters: ['Geral'] },
+  { id: 12, title: 'Diff de Snapshots', desc: 'Mudanças entre importações e auditoria', Icon: History, iconColor: 'text-cyan-600', filters: ['Snapshot A', 'Snapshot B'] },
 ];
 
 const Reports: React.FC = () => {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="text-left">
           <h3 className="text-2xl font-bold text-slate-800">Catálogo de Relatórios</h3>
           <p className="text-slate-500">Gere documentos oficiais e análises operacionais dinâmicas.</p>
         </div>
@@ -48,10 +57,10 @@ const Reports: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {reportCatalog.map(report => (
-          <div key={report.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group cursor-pointer flex flex-col">
+          <div key={report.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group cursor-pointer flex flex-col text-left">
             <div className="flex items-start justify-between mb-4">
               <div className="p-3 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition-colors">
-                {React.cloneElement(report.icon as React.ReactElement<any>, { size: 24 })}
+                <report.Icon className={`${report.iconColor}`} size={24} />
               </div>
               <button className="text-slate-400 hover:text-blue-600 transition-colors">
                 <FileDown size={20} />
@@ -75,7 +84,7 @@ const Reports: React.FC = () => {
         ))}
       </div>
 
-      <div className="bg-blue-900 rounded-2xl p-8 text-white relative overflow-hidden">
+      <div className="bg-blue-900 rounded-2xl p-8 text-white relative overflow-hidden text-left">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <h3 className="text-2xl font-bold mb-2">Relatório Executivo Mensal</h3>

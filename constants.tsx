@@ -1,13 +1,10 @@
-
-import React from 'react';
-
 export const STATUS_COLORS: Record<string, string> = {
-  'P': 'bg-green-500 text-white',
+  'P': 'bg-emerald-500 text-white',
   'T': 'bg-slate-400 text-white',
   'D': 'bg-amber-500 text-white',
-  'F': 'bg-red-500 text-white',
-  'AT': 'bg-blue-600 text-white',
-  'FE': 'bg-purple-700 text-white',
+  'F': 'bg-rose-500 text-white',
+  'AT': 'bg-sky-600 text-white',
+  'FE': 'bg-indigo-700 text-white',
 };
 
 export const STATUS_LABELS: Record<string, string> = {
@@ -19,13 +16,4 @@ export const STATUS_LABELS: Record<string, string> = {
   'FE': 'Férias',
 };
 
-export const RANKS = [
-  'Gerente',
-  'Inspetor',
-  'Subinspetor',
-  'GCD I',
-  'GCD II',
-  'GCM I',
-  'GCM II',
-  'GCM III'
-];
+export const RANKS = ['Inspetor', 'Subinspetor', 'GCD I', 'GCD II', 'GCM I', 'GCM II', 'GCM III'];
