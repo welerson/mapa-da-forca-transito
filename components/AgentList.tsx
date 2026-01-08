@@ -1,17 +1,34 @@
 
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Plus, CheckCircle2, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, MoreVertical, Plus, CheckCircle2, ShieldAlert, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const AgentList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-
-  const agents = [
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [agents, setAgents] = useState([
     { bm: '315416-3', rank: 'GCM III', name: 'HERMENEGILDO', code: 'G050', location: 'RONDA MT', cnh: 'AB', status: 'ATIVO', course: 'Vigente' },
     { bm: '315432-5', rank: 'GCM III', name: 'TAPIAS', code: 'G050', location: 'RONDA MT', cnh: 'AB', status: 'ATIVO', course: 'Vigente' },
     { bm: '86027-5', rank: 'GCD II', name: 'FERNANDO ALVES', code: 'G053', location: 'PROC. AUTO INFRAÇÃO', cnh: 'AB', status: 'ATIVO', course: 'Pendente', pendency: 'CNH VENCIDA' },
     { bm: '86228-6', rank: 'GCD II', name: 'FABIO ALEXANDRE', code: 'G050', location: 'RONDA MT', cnh: 'AB', status: 'ATIVO', course: 'Vigente' },
     { bm: '86054-2', rank: 'GCD II', name: 'DEOLINDO', code: 'G054', location: 'ROTATIVO', cnh: '-', status: 'SEM PORTE', course: 'Pendente' },
-  ];
+  ]);
+
+  const [newAgent, setNewAgent] = useState({
+    bm: '', rank: 'GCM III', name: '', code: '', location: '', cnh: 'AB', status: 'ATIVO', course: 'Vigente'
+  });
+
+  const handleAddAgent = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAgents([newAgent, ...agents]);
+    setIsModalOpen(false);
+    setNewAgent({ bm: '', rank: 'GCM III', name: '', code: '', location: '', cnh: 'AB', status: 'ATIVO', course: 'Vigente' });
+  };
+
+  const filteredAgents = agents.filter(a => 
+    a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    a.bm.includes(searchTerm) || 
+    a.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -20,7 +37,10 @@ const AgentList: React.FC = () => {
           <h3 className="text-xl font-bold text-slate-800">Cadastro de Efetivo</h3>
           <p className="text-sm text-slate-500">Gerenciamento detalhado de credenciamento e cursos.</p>
         </div>
-        <button className="flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-md">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-md"
+        >
           <Plus size={18} /> Novo Agente
         </button>
       </div>
@@ -38,11 +58,7 @@ const AgentList: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white hover:bg-slate-50 transition-colors">
-              <Filter size={16} /> Filtros Avançados
-            </button>
-            <div className="h-6 w-px bg-slate-200 mx-1"></div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total: {agents.length}</p>
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total: {filteredAgents.length}</p>
           </div>
         </div>
 
@@ -61,7 +77,7 @@ const AgentList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {agents.map((agent, idx) => (
+              {filteredAgents.map((agent, idx) => (
                 <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                   <td className="p-4 font-mono text-slate-600 font-bold">{agent.bm}</td>
                   <td className="p-4">
@@ -100,7 +116,7 @@ const AgentList: React.FC = () => {
                       <span className="text-slate-300">-</span>
                     )}
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 text-right">
                     <button className="text-slate-400 hover:text-slate-800 transition-colors">
                       <MoreVertical size={16} />
                     </button>
@@ -110,15 +126,60 @@ const AgentList: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
 
-        <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-center">
-          <div className="flex items-center gap-1">
-            <button className="p-2 text-slate-400 disabled:opacity-30" disabled><ChevronLeft size={16} /></button>
-            <span className="text-xs text-slate-500 px-4">Página 1 de 1</span>
-            <button className="p-2 text-slate-400 disabled:opacity-30" disabled><ChevronRight size={16} /></button>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 text-left">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden slide-up">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h4 className="font-bold text-slate-800">Novo Agente no Efetivo</h4>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleAddAgent} className="p-8 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Matrícula (BM)</label>
+                  <input required type="text" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+                    value={newAgent.bm} onChange={e => setNewAgent({...newAgent, bm: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Posto/Grad</label>
+                  <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                    value={newAgent.rank} onChange={e => setNewAgent({...newAgent, rank: e.target.value})}>
+                    <option>GCD I</option>
+                    <option>GCD II</option>
+                    <option>GCM III</option>
+                    <option>Inspetor</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nome Funcional</label>
+                <input required type="text" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+                  value={newAgent.name} onChange={e => setNewAgent({...newAgent, name: e.target.value.toUpperCase()})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cód. Setor</label>
+                  <input required type="text" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+                    value={newAgent.code} onChange={e => setNewAgent({...newAgent, code: e.target.value.toUpperCase()})} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">CNH</label>
+                  <input type="text" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+                    value={newAgent.cnh} onChange={e => setNewAgent({...newAgent, cnh: e.target.value.toUpperCase()})} />
+                </div>
+              </div>
+              <div className="pt-6 flex gap-3">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors">Cancelar</button>
+                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">Salvar Agente</button>
+              </div>
+            </form>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Search, Download, Filter, Calendar as CalendarIcon } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS } from '../constants';
@@ -13,10 +14,28 @@ const ScheduleGrid: React.FC = () => {
     { bm: '86054-2', rank: 'GCD II', name: 'DEOLINDO', code: 'G054', shift: '06:30-18:30', schedule: ['P', 'P', 'F', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
   ];
 
+  const handleExport = () => {
+    const headers = ['BM', 'NOME', 'SETOR', 'TURNO', ...days.map(d => `DIA ${d < 10 ? '0'+d : d}`)];
+    const rows = mockData.map(row => [
+      row.bm, row.name, row.code, row.shift, ...row.schedule
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.join(','))].join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Escala_DCO_Janeiro_2026.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
       <div className="p-5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 text-left">
           <div className="flex items-center bg-white rounded-xl border border-slate-200 p-1.5 shadow-sm">
             <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"><ChevronLeft size={18} /></button>
             <span className="px-4 font-bold text-sm text-slate-700">Janeiro 2026</span>
@@ -43,7 +62,10 @@ const ScheduleGrid: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md">
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md"
+          >
             <Download size={16} /> Exportar
           </button>
         </div>
@@ -59,14 +81,14 @@ const ScheduleGrid: React.FC = () => {
               <th className="p-4 border-r border-slate-800 w-32 text-center">TURNO</th>
               {days.map(d => (
                 <th key={d} className={`p-1 border-r border-slate-800 text-center w-10 ${d === 8 ? 'bg-blue-600 text-white' : ''}`}>
-                  <div className="text-[8px] opacity-60">DOM</div>
+                  <div className="text-[8px] opacity-60">DIA</div>
                   <div className="text-xs">{d < 10 ? `0${d}` : d}</div>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="text-xs">
-            {mockData.map((row, i) => (
+            {mockData.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase())).map((row, i) => (
               <tr key={i} className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
                 <td className="p-4 border-r border-slate-100 font-mono text-slate-400 font-medium">{row.bm}</td>
                 <td className="p-4 border-r border-slate-100">

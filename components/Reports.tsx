@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { 
   FileText, 
   FileDown, 
@@ -12,7 +13,9 @@ import {
   History,
   AlertOctagon,
   FileCheck,
-  LucideIcon
+  LucideIcon,
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 
 interface ReportItem {
@@ -40,6 +43,27 @@ const reportCatalog: ReportItem[] = [
 ];
 
 const Reports: React.FC = () => {
+  const [generatingId, setGeneratingId] = useState<number | null>(null);
+  const [successId, setSuccessId] = useState<number | null>(null);
+
+  const handleGenerate = (id: number) => {
+    setGeneratingId(id);
+    // Simula processamento do relatório
+    setTimeout(() => {
+      setGeneratingId(null);
+      setSuccessId(id);
+      setTimeout(() => setSuccessId(null), 3000);
+      
+      // Simula download de PDF (arquivo vazio para exemplo)
+      const blob = new Blob(["Simulação de Relatório PDF DCO"], {type: "application/pdf"});
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Relatorio_DCO_${id}.pdf`;
+      a.click();
+    }, 2000);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -77,8 +101,26 @@ const Reports: React.FC = () => {
               ))}
             </div>
 
-            <button className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg transition-colors border border-slate-100">
-              Gerar Relatório
+            <button 
+              disabled={generatingId !== null}
+              onClick={() => handleGenerate(report.id)}
+              className={`w-full py-2 text-xs font-bold rounded-lg transition-all border flex items-center justify-center gap-2
+                ${successId === report.id 
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-100 disabled:opacity-50'
+                }`}
+            >
+              {generatingId === report.id ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> Gerando...
+                </>
+              ) : successId === report.id ? (
+                <>
+                  <CheckCircle size={14} /> Relatório Baixado
+                </>
+              ) : (
+                'Gerar Relatório'
+              )}
             </button>
           </div>
         ))}
@@ -93,8 +135,12 @@ const Reports: React.FC = () => {
               disponibilidade de VTRs e pendências de efetivo para o Comando.
             </p>
           </div>
-          <button className="px-8 py-3 bg-white text-blue-900 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
-            <Calendar size={18} /> Baixar Relatório de Janeiro
+          <button 
+            onClick={() => handleGenerate(99)}
+            className="px-8 py-3 bg-white text-blue-900 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95"
+          >
+            {generatingId === 99 ? <Loader2 className="animate-spin" size={18} /> : <Calendar size={18} />}
+            Baixar Relatório de Janeiro
           </button>
         </div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-800 rounded-full -translate-y-1/2 translate-x-1/2 opacity-20"></div>
