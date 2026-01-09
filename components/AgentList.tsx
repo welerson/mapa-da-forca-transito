@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, Filter, MoreVertical, Plus, CheckCircle2, ShieldAlert, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Agent } from '../types';
 
@@ -12,6 +12,11 @@ const AgentList: React.FC<AgentListProps> = ({ agents, setAgents }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Extrai setores únicos para sugestão
+  const existingSectors = useMemo(() => {
+    return Array.from(new Set(agents.map(a => a.code))).sort();
+  }, [agents]);
+
   const [newAgent, setNewAgent] = useState<Agent>({
     bm: '', 
     rank: 'GCM III', 
@@ -22,7 +27,7 @@ const AgentList: React.FC<AgentListProps> = ({ agents, setAgents }) => {
     status: 'ATIVO', 
     course: 'Vigente',
     shift: '07:30-19:30',
-    schedule: Array(15).fill('') // Escala inicial vazia para 15 dias
+    schedule: Array(31).fill('') // Escala para 31 dias
   });
 
   const handleAddAgent = (e: React.FormEvent) => {
@@ -36,7 +41,7 @@ const AgentList: React.FC<AgentListProps> = ({ agents, setAgents }) => {
     // Reseta o formulário
     setNewAgent({ 
       bm: '', rank: 'GCM III', name: '', code: '', location: '', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', 
-      schedule: Array(15).fill('') 
+      schedule: Array(31).fill('') 
     });
   };
 
@@ -179,8 +184,20 @@ const AgentList: React.FC<AgentListProps> = ({ agents, setAgents }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cód. Setor</label>
-                  <input required type="text" placeholder="Ex: G051" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold" 
-                    value={newAgent.code} onChange={e => setNewAgent({...newAgent, code: e.target.value.toUpperCase()})} />
+                  <input 
+                    required 
+                    type="text" 
+                    list="sectors-list"
+                    placeholder="Ex: G051" 
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold" 
+                    value={newAgent.code} 
+                    onChange={e => setNewAgent({...newAgent, code: e.target.value.toUpperCase()})} 
+                  />
+                  <datalist id="sectors-list">
+                    {existingSectors.map(s => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">CNH</label>
