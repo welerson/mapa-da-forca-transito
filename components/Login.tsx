@@ -46,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div className="mb-6 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3 text-left">
               <Info className="text-emerald-600 shrink-0" size={18} />
               <p className="text-[11px] text-emerald-700 leading-tight font-medium">
-                <strong>Pronto para Uso:</strong> Sistema configurado para importação de PDF "Ponto do Dia". Acesse abaixo.
+                <strong>Pronto para Uso:</strong> Sistema operacional v2.0. Identidade visual e motor de PDF atualizados.
               </p>
             </div>
 
@@ -97,7 +97,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
               <div className="relative py-2">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400"><span className="bg-white px-2">Acesso Rápido</span></div>
+                <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400"><span className="bg-white px-2">Entrada Rápida</span></div>
               </div>
 
               <button 
@@ -105,14 +105,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 onClick={handleQuickLogin}
                 className="w-full py-3 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
               >
-                Entrada Direta
+                Acesso de Homologação
               </button>
             </form>
           </div>
 
           <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-              G051 DCO • SISTEMA DE SEGURANÇA PÚBLICA
+              G051 DCO • SEGURANÇA PÚBLICA • v2.0
             </p>
           </div>
         </div>

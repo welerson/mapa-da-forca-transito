@@ -1,13 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, Download, X, FileUp, Loader2, CheckCircle, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Download, X, FileUp, Loader2, CheckCircle } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS } from '../constants';
 import { Agent } from '../types';
 
 // Importando PDF.js via ESM
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurando o Worker do PDF.js de forma robusta
+// Configurando o Worker do PDF.js com caminho absoluto para evitar 404
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 
 interface ScheduleGridProps {
@@ -70,17 +70,14 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         const textContent = await page.getTextContent();
         const items = textContent.items as any[];
 
-        // 1. Localizar "1º ENTRADA" para ancorar a busca dos horários
         const header = items.find(item => item.str.includes("1º ENTRADA"));
         if (header) entryColumnX = header.transform[4];
 
-        // 2. Localizar Data do Relatório (DD/MM/AAAA)
         items.forEach(item => {
           const match = item.str.match(/\d{2}\/\d{2}\/\d{4}/);
           if (match && !dateOfReport) dateOfReport = match[0];
         });
 
-        // 3. Processar Linhas (Agrupando por Y)
         const rowsByY: Record<string, any[]> = {};
         items.forEach(item => {
           const y = Math.round(item.transform[5]);
@@ -90,8 +87,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
         Object.values(rowsByY).forEach(rowItems => {
           rowItems.sort((a, b) => a.transform[4] - b.transform[4]);
-          
-          // Se começa com data, é uma linha de registro de ponto
           if (rowItems[0]?.str.match(/\d{2}\/\d{2}\/\d{4}/)) {
             const nameItem = rowItems.find(item => item.transform[4] > 60 && item.transform[4] < 165);
             const entryItem = rowItems.find(item => 
@@ -108,7 +103,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         });
       }
 
-      if (!dateOfReport) throw new Error("ERRO: RELATÓRIO PDF INVÁLIDO OU NÃO RECONHECIDO.");
+      if (!dateOfReport) throw new Error("Documento não reconhecido como relatório de ponto.");
       
       const day = parseInt(dateOfReport.split('/')[0]);
       const dayIdx = day - 1;
@@ -139,7 +134,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
       setAgents(tempAgents);
       setImportFeedback({
-        message: `Importação do Dia ${day} realizada: ${updatedCount} agentes atualizados.`,
+        message: `Sucesso: Dia ${day} atualizado (${updatedCount} registros).`,
         type: 'success'
       });
 
@@ -208,7 +203,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-black transition-all shadow-md active:scale-95 disabled:opacity-50"
           >
             {isImporting ? <Loader2 size={16} className="animate-spin" /> : <FileUp size={16} />} 
-            Importar Ponto (PDF)
+            Importar PDF
           </button>
 
           <button onClick={handleExport} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95">
