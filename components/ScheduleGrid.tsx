@@ -62,73 +62,108 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
       const arrayBuffer = await file.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
-      let fullText = "";
+      
+      let allRows: any[] = [];
+      let entryColumnX = -1; // Coordenada X da coluna "1º ENTRADA"
+      let dateOfReport = "";
 
+      // Processar todas as páginas
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => (item as any).str).join(" ");
-        fullText += pageText + "\n";
+        const items = textContent.items as any[];
+
+        // 1. Encontrar a coordenada X da coluna "1º ENTRADA" no cabeçalho
+        if (entryColumnX === -1) {
+          const entryHeader = items.find(item => item.str.includes("1º ENTRADA"));
+          if (entryHeader) entryColumnX = entryHeader.transform[4];
+        }
+
+        // 2. Tentar pegar a data (ex: 09/01/2026)
+        if (!dateOfReport) {
+          const dateItem = items.find(item => item.str.match(/\d{2}\/\d{2}\/\d{4}/));
+          if (dateItem) dateOfReport = dateItem.str.match(/\d{2}\/\d{2}\/\d{4}/)![0];
+        }
+
+        // 3. Agrupar itens por linha (coordenada Y)
+        const rowsByY: Record<string, any[]> = {};
+        items.forEach(item => {
+          const y = Math.round(item.transform[5]);
+          if (!rowsByY[y]) rowsByY[y] = [];
+          rowsByY[y].push(item);
+        });
+
+        // 4. Analisar cada linha
+        Object.values(rowsByY).forEach(rowItems => {
+          // Ordenar itens da linha por X
+          rowItems.sort((a, b) => a.transform[4] - b.transform[4]);
+          
+          // Verificar se a linha começa com uma data (é uma linha de funcionário)
+          if (rowItems[0].str.match(/\d{2}\/\d{2}\/\d{4}/)) {
+            const nameItem = rowItems.find(item => item.transform[4] > 60 && item.transform[4] < 150);
+            
+            // Procurar especificamente o que está na coluna "1º ENTRADA"
+            // Usamos uma margem de erro (± 30 pixels) para capturar o texto na coluna certa
+            const entryItem = rowItems.find(item => 
+              Math.abs(item.transform[4] - entryColumnX) < 40
+            );
+
+            if (nameItem) {
+              allRows.push({
+                name: nameItem.str.trim().toUpperCase(),
+                entryStatus: entryItem ? entryItem.str.trim().toUpperCase() : ""
+              });
+            }
+          }
+        });
       }
 
-      const dateMatch = fullText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-      if (!dateMatch) throw new Error("Data não encontrada no documento.");
-      
-      const day = parseInt(dateMatch[1]);
+      if (!dateOfReport) throw new Error("Data do relatório não identificada.");
+      const day = parseInt(dateOfReport.split('/')[0]);
       const dayIdx = day - 1;
-      
-      // Capturar nomes e status de cada linha do relatório
-      // O padrão geralmente é DATA NOME STATUS/HORA
-      const lines = fullText.split(/\d{2}\/\d{2}\/\d{4}/).filter(l => l.trim().length > 10);
-      
+
+      let tempAgents = [...agents];
       let updatedCount = 0;
       let newAgenciesCount = 0;
-      let tempAgents = [...agents];
 
-      lines.forEach(line => {
-        const lineUpper = line.toUpperCase();
-        
-        // Extrair o nome: assumimos que o nome vem logo após a data (que já foi removida no split)
-        // e vai até encontrar um horário ou status conhecido
-        const statusOrTimeMatch = lineUpper.match(/(\d{2}:\d{2}E?|FOLGA|FERIAS|FALTA|LICENÇA|ATESTADO)/);
-        if (!statusOrTimeMatch) return;
+      allRows.forEach(row => {
+        const rawName = row.name;
+        const entryText = row.entryStatus;
 
-        const rawName = lineUpper.substring(0, statusOrTimeMatch.index).trim();
-        const foundStatusRaw = statusOrTimeMatch[0];
-        
-        // Mapeamento de status
+        // Mapeamento de Status baseado na COLUNA 1º ENTRADA
         let status = '';
-        if (foundStatusRaw.match(/\d{2}:\d{2}/)) status = 'P';
-        else if (foundStatusRaw.includes('FERIAS')) status = 'FE';
-        else if (foundStatusRaw.includes('FALTA')) status = 'F';
-        else if (foundStatusRaw.includes('LICENÇA')) status = 'D';
-        else if (foundStatusRaw.includes('ATESTADO')) status = 'AT';
-        else if (foundStatusRaw.includes('FOLGA')) status = '';
+        if (entryText.match(/\d{2}:\d{2}/)) status = 'P'; // Se tem hora, é PRESENÇA
+        else if (entryText.includes('FERIAS')) status = 'FE';
+        else if (entryText.includes('FALTA')) status = 'F';
+        else if (entryText.includes('LICENÇA')) status = 'D';
+        else if (entryText.includes('ATESTADO')) status = 'AT';
+        else if (entryText.includes('FOLGA')) status = ''; // FOLGA limpa o dia
+        else status = ''; // Vazio ou qualquer outra coisa limpa o dia
 
-        // Tenta encontrar agente existente por nome (Fuzzy Match)
-        let agentIdx = tempAgents.findIndex(a => 
-          rawName.includes(a.name.toUpperCase()) || a.name.toUpperCase().includes(rawName)
-        );
+        // Tenta encontrar agente existente (Fuzzy Match)
+        let agentIdx = tempAgents.findIndex(a => {
+          const sysName = a.name.toUpperCase();
+          return rawName.includes(sysName) || sysName.includes(rawName);
+        });
 
         if (agentIdx !== -1) {
-          // Agente já existe, atualiza escala
           const updatedSchedule = [...tempAgents[agentIdx].schedule];
           while (updatedSchedule.length < 31) updatedSchedule.push('');
           updatedSchedule[dayIdx] = status;
           tempAgents[agentIdx] = { ...tempAgents[agentIdx], schedule: updatedSchedule };
           updatedCount++;
-        } else if (rawName.length > 3) {
-          // NOVO AGENTE: Se não existir, criamos um registro temporário
+        } else if (rawName.length > 5) {
+          // Auto-cadastro para nomes novos
           const newAgent: Agent = {
-            bm: `IMPORT-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+            bm: `IMP-${Math.floor(10000 + Math.random() * 90000)}`,
             name: rawName,
             rank: 'GCM',
-            code: 'NÃO DEF.',
+            code: 'G-IMPORT',
             location: 'IMPORTADO',
             cnh: '-',
             status: 'ATIVO',
             course: 'Vigente',
-            shift: '07:30-19:30',
+            shift: 'PENDENTE',
             schedule: Array(31).fill('')
           };
           newAgent.schedule[dayIdx] = status;
@@ -140,14 +175,14 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
       setAgents(tempAgents);
       setImportFeedback({
-        message: `Importação: ${updatedCount} registros processados. ${newAgenciesCount > 0 ? `${newAgenciesCount} novos agentes criados.` : ''}`,
-        type: newAgenciesCount > 0 ? 'info' : 'success'
+        message: `Dia ${day} processado: ${updatedCount} registros atualizados.`,
+        type: 'success'
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setImportFeedback({
-        message: "Erro no PDF: Certifique-se de que é o relatório 'Ponto do dia'.",
+        message: `Erro: ${error.message || "Falha ao ler PDF."}`,
         type: 'error'
       });
     } finally {
@@ -165,7 +200,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `Escala_DCO_Janeiro_2026.csv`);
+    link.setAttribute("download", `Escala_DCO_Jan_26.csv`);
     link.click();
   };
 
@@ -215,8 +250,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-bold uppercase animate-in slide-in-from-right-4 
               ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
                 importFeedback.type === 'info' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-              {importFeedback.type === 'info' ? <UserPlus size={14} /> : <CheckCircle size={14} />} 
-              {importFeedback.message}
+              <CheckCircle size={14} /> {importFeedback.message}
             </div>
           )}
 
@@ -338,11 +372,11 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         <div className="flex gap-6 overflow-x-auto w-full md:w-auto">
           <div className="flex items-center gap-2 shrink-0">
              <Info size={14} className="text-blue-500" />
-             <span>A importação via PDF agora cria automaticamente agentes não encontrados.</span>
+             <span>O importador agora detecta FOLGA e FÉRIAS baseando-se apenas na coluna correta do PDF.</span>
           </div>
           <div className="w-px h-4 bg-slate-200 hidden md:block"></div>
           <span className="flex items-center gap-2 shrink-0">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> Presenças: {agents.reduce((acc, curr) => acc + curr.schedule.filter(s => s === 'P').length, 0)}
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> Presenças Hoje: {agents.reduce((acc, curr) => acc + curr.schedule.filter(s => s === 'P').length, 0)}
           </span>
         </div>
         

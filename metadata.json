@@ -1,5 +1,5 @@
 {
-  "name": "Mapa da Força DCO - Trânsito",
-  "description": "Sistema de gestão de efetivo, escalas e logística para departamentos de segurança pública e trânsito, baseado na planilha TRÂNSITO MAPA DA FORÇA DCO.",
+  "name": "Sistema Mapa da Força DCO - V2",
+  "description": "Gestão operacional de efetivo e escalas para o DCO com importação inteligente de PDF.",
   "requestFramePermissions": []
 }
