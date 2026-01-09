@@ -14,7 +14,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulação de autenticação
     setTimeout(() => {
       onLogin(email || 'gestor@codafe.gov.br');
       setLoading(false);

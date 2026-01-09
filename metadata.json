@@ -1,5 +1,7 @@
 {
   "name": "Gestão CODAFE",
   "description": "Sistema de gestão operacional, escalas e efetivo CODAFE com motor de importação analítica.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
