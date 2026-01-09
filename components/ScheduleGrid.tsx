@@ -1,13 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, Download, X, FilterX, FileUp, Loader2, CheckCircle, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Download, X, FilterX, FileUp, Loader2, CheckCircle, Info, UserPlus } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS } from '../constants';
 import { Agent } from '../types';
 
 // Importando PDF.js
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurando o Worker do PDF.js de forma estática para evitar problemas de resolução de versão
+// Configurando o Worker do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 
 interface ScheduleGridProps {
@@ -20,7 +20,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
   const [activeStatusFilter, setActiveStatusFilter] = useState<string | null>(null);
   const [activeCell, setActiveCell] = useState<{ agentBm: string, dayIdx: number } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [importFeedback, setImportFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [importFeedback, setImportFeedback] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
   
   const pickerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -67,7 +67,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(" ");
+        const pageText = textContent.items.map((item: any) => (item as any).str).join(" ");
         fullText += pageText + "\n";
       }
 
@@ -76,64 +76,84 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
       
       const day = parseInt(dateMatch[1]);
       const dayIdx = day - 1;
+      
+      // Capturar nomes e status de cada linha do relatório
+      // O padrão geralmente é DATA NOME STATUS/HORA
       const lines = fullText.split(/\d{2}\/\d{2}\/\d{4}/).filter(l => l.trim().length > 10);
       
       let updatedCount = 0;
+      let newAgenciesCount = 0;
+      let tempAgents = [...agents];
 
-      const newAgents = [...agents].map(agent => {
-        const normalizedAgentName = agent.name.toUpperCase().trim();
-        const firstName = normalizedAgentName.split(' ')[0];
+      lines.forEach(line => {
+        const lineUpper = line.toUpperCase();
+        
+        // Extrair o nome: assumimos que o nome vem logo após a data (que já foi removida no split)
+        // e vai até encontrar um horário ou status conhecido
+        const statusOrTimeMatch = lineUpper.match(/(\d{2}:\d{2}E?|FOLGA|FERIAS|FALTA|LICENÇA|ATESTADO)/);
+        if (!statusOrTimeMatch) return;
 
-        const matchingLine = lines.find(line => {
-          const lineUpper = line.toUpperCase();
-          return lineUpper.includes(normalizedAgentName) || (lineUpper.includes(firstName) && lineUpper.length > 20);
-        });
+        const rawName = lineUpper.substring(0, statusOrTimeMatch.index).trim();
+        const foundStatusRaw = statusOrTimeMatch[0];
+        
+        // Mapeamento de status
+        let status = '';
+        if (foundStatusRaw.match(/\d{2}:\d{2}/)) status = 'P';
+        else if (foundStatusRaw.includes('FERIAS')) status = 'FE';
+        else if (foundStatusRaw.includes('FALTA')) status = 'F';
+        else if (foundStatusRaw.includes('LICENÇA')) status = 'D';
+        else if (foundStatusRaw.includes('ATESTADO')) status = 'AT';
+        else if (foundStatusRaw.includes('FOLGA')) status = '';
 
-        if (matchingLine) {
-          let status = '';
-          const lineUpper = matchingLine.toUpperCase();
+        // Tenta encontrar agente existente por nome (Fuzzy Match)
+        let agentIdx = tempAgents.findIndex(a => 
+          rawName.includes(a.name.toUpperCase()) || a.name.toUpperCase().includes(rawName)
+        );
 
-          if (lineUpper.match(/\d{2}:\d{2}/)) {
-            status = 'P';
-          } else if (lineUpper.includes('FERIAS')) {
-            status = 'FE';
-          } else if (lineUpper.includes('FALTA')) {
-            status = 'F';
-          } else if (lineUpper.includes('LICENÇA')) {
-            status = 'D';
-          } else if (lineUpper.includes('ATESTADO')) {
-            status = 'AT';
-          } else if (lineUpper.includes('FOLGA')) {
-            status = '';
-          }
-
-          if (status !== agent.schedule[dayIdx]) {
-            const newSchedule = [...agent.schedule];
-            while (newSchedule.length < 31) newSchedule.push('');
-            newSchedule[dayIdx] = status;
-            updatedCount++;
-            return { ...agent, schedule: newSchedule };
-          }
+        if (agentIdx !== -1) {
+          // Agente já existe, atualiza escala
+          const updatedSchedule = [...tempAgents[agentIdx].schedule];
+          while (updatedSchedule.length < 31) updatedSchedule.push('');
+          updatedSchedule[dayIdx] = status;
+          tempAgents[agentIdx] = { ...tempAgents[agentIdx], schedule: updatedSchedule };
+          updatedCount++;
+        } else if (rawName.length > 3) {
+          // NOVO AGENTE: Se não existir, criamos um registro temporário
+          const newAgent: Agent = {
+            bm: `IMPORT-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+            name: rawName,
+            rank: 'GCM',
+            code: 'NÃO DEF.',
+            location: 'IMPORTADO',
+            cnh: '-',
+            status: 'ATIVO',
+            course: 'Vigente',
+            shift: '07:30-19:30',
+            schedule: Array(31).fill('')
+          };
+          newAgent.schedule[dayIdx] = status;
+          tempAgents.push(newAgent);
+          newAgenciesCount++;
+          updatedCount++;
         }
-        return agent;
       });
 
-      setAgents(newAgents);
+      setAgents(tempAgents);
       setImportFeedback({
-        message: `Importação Concluída: ${updatedCount} agentes atualizados para o dia ${day}.`,
-        type: 'success'
+        message: `Importação: ${updatedCount} registros processados. ${newAgenciesCount > 0 ? `${newAgenciesCount} novos agentes criados.` : ''}`,
+        type: newAgenciesCount > 0 ? 'info' : 'success'
       });
 
     } catch (error) {
       console.error(error);
       setImportFeedback({
-        message: "Erro: Formato de PDF incompatível. Use o relatório 'Ponto do dia'.",
+        message: "Erro no PDF: Certifique-se de que é o relatório 'Ponto do dia'.",
         type: 'error'
       });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      setTimeout(() => setImportFeedback(null), 6000);
+      setTimeout(() => setImportFeedback(null), 8000);
     }
   };
 
@@ -193,8 +213,9 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         <div className="flex items-center gap-3 ml-auto">
           {importFeedback && (
             <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-bold uppercase animate-in slide-in-from-right-4 
-              ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-              {importFeedback.type === 'success' ? <CheckCircle size={14} /> : <FilterX size={14} />} 
+              ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                importFeedback.type === 'info' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+              {importFeedback.type === 'info' ? <UserPlus size={14} /> : <CheckCircle size={14} />} 
               {importFeedback.message}
             </div>
           )}
@@ -317,7 +338,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         <div className="flex gap-6 overflow-x-auto w-full md:w-auto">
           <div className="flex items-center gap-2 shrink-0">
              <Info size={14} className="text-blue-500" />
-             <span>A importação via PDF preenche automaticamente o dia identificado no relatório.</span>
+             <span>A importação via PDF agora cria automaticamente agentes não encontrados.</span>
           </div>
           <div className="w-px h-4 bg-slate-200 hidden md:block"></div>
           <span className="flex items-center gap-2 shrink-0">

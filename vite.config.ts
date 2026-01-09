@@ -9,6 +9,7 @@ export default defineConfig({
     host: true
   },
   build: {
+    target: 'esnext',
     outDir: 'dist',
     emptyOutDir: true,
     sourcemap: false,
@@ -19,6 +20,11 @@ export default defineConfig({
           pdf: ['jspdf', 'jspdf-autotable', 'pdfjs-dist']
         }
       }
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'esnext'
     }
   }
 });
