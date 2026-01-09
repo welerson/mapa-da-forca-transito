@@ -1,5 +1,5 @@
 {
-  "name": "Sistema Mapa da Força DCO - V2",
-  "description": "Gestão operacional de efetivo e escalas para o DCO com importação inteligente de PDF.",
+  "name": "DCO-Mapa-Forca-G051-Final",
+  "description": "Sistema de gestão de escalas e efetivo DCO com importação de PDF baseada em coordenadas de coluna.",
   "requestFramePermissions": []
 }

@@ -64,28 +64,23 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
       const pdf = await loadingTask.promise;
       
       let allRows: any[] = [];
-      let entryColumnX = -1; // Coordenada X da coluna "1º ENTRADA"
+      let entryColumnX = -1; 
       let dateOfReport = "";
 
-      // Processar todas as páginas
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         const items = textContent.items as any[];
 
-        // 1. Encontrar a coordenada X da coluna "1º ENTRADA" no cabeçalho
-        if (entryColumnX === -1) {
-          const entryHeader = items.find(item => item.str.includes("1º ENTRADA"));
-          if (entryHeader) entryColumnX = entryHeader.transform[4];
-        }
+        // 1. Localizar o cabeçalho '1º ENTRADA' para definir a coordenada X de interesse
+        const header = items.find(item => item.str.includes("1º ENTRADA"));
+        if (header) entryColumnX = header.transform[4];
 
-        // 2. Tentar pegar a data (ex: 09/01/2026)
-        if (!dateOfReport) {
-          const dateItem = items.find(item => item.str.match(/\d{2}\/\d{2}\/\d{4}/));
-          if (dateItem) dateOfReport = dateItem.str.match(/\d{2}\/\d{2}\/\d{4}/)![0];
-        }
+        // 2. Localizar a data do relatório (ex: 09/01/2026)
+        const dateItem = items.find(item => item.str.match(/\d{2}\/\d{2}\/\d{4}/));
+        if (dateItem && !dateOfReport) dateOfReport = dateItem.str.match(/\d{2}\/\d{2}\/\d{4}/)![0];
 
-        // 3. Agrupar itens por linha (coordenada Y)
+        // 3. Agrupar itens por linha (Y)
         const rowsByY: Record<string, any[]> = {};
         items.forEach(item => {
           const y = Math.round(item.transform[5]);
@@ -93,19 +88,18 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
           rowsByY[y].push(item);
         });
 
-        // 4. Analisar cada linha
         Object.values(rowsByY).forEach(rowItems => {
-          // Ordenar itens da linha por X
           rowItems.sort((a, b) => a.transform[4] - b.transform[4]);
           
-          // Verificar se a linha começa com uma data (é uma linha de funcionário)
+          // Se a linha começa com uma data, é uma linha de funcionário
           if (rowItems[0].str.match(/\d{2}\/\d{2}\/\d{4}/)) {
-            const nameItem = rowItems.find(item => item.transform[4] > 60 && item.transform[4] < 150);
+            // Nome geralmente fica entre X=60 e X=250 no seu layout
+            const nameItem = rowItems.find(item => item.transform[4] > 60 && item.transform[4] < 160);
             
-            // Procurar especificamente o que está na coluna "1º ENTRADA"
-            // Usamos uma margem de erro (± 30 pixels) para capturar o texto na coluna certa
+            // BUSCA PRECISA: Apenas o que está na "zona" da 1ª entrada
+            // Usamos uma tolerância de 40 pixels
             const entryItem = rowItems.find(item => 
-              Math.abs(item.transform[4] - entryColumnX) < 40
+              entryColumnX !== -1 && Math.abs(item.transform[4] - entryColumnX) < 40
             );
 
             if (nameItem) {
@@ -118,29 +112,27 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         });
       }
 
-      if (!dateOfReport) throw new Error("Data do relatório não identificada.");
+      if (!dateOfReport) throw new Error("Data não encontrada no PDF.");
       const day = parseInt(dateOfReport.split('/')[0]);
       const dayIdx = day - 1;
 
       let tempAgents = [...agents];
       let updatedCount = 0;
-      let newAgenciesCount = 0;
 
       allRows.forEach(row => {
         const rawName = row.name;
         const entryText = row.entryStatus;
 
-        // Mapeamento de Status baseado na COLUNA 1º ENTRADA
+        // Lógica de Status centrada na coluna correta
         let status = '';
         if (entryText.match(/\d{2}:\d{2}/)) status = 'P'; // Se tem hora, é PRESENÇA
         else if (entryText.includes('FERIAS')) status = 'FE';
         else if (entryText.includes('FALTA')) status = 'F';
-        else if (entryText.includes('LICENÇA')) status = 'D';
         else if (entryText.includes('ATESTADO')) status = 'AT';
         else if (entryText.includes('FOLGA')) status = ''; // FOLGA limpa o dia
-        else status = ''; // Vazio ou qualquer outra coisa limpa o dia
+        else status = ''; // Vazio ou qualquer outra coisa na coluna limpa o dia
 
-        // Tenta encontrar agente existente (Fuzzy Match)
+        // Vínculo com agente do sistema (Fuzzy Match para nomes compostos)
         let agentIdx = tempAgents.findIndex(a => {
           const sysName = a.name.toUpperCase();
           return rawName.includes(sysName) || sysName.includes(rawName);
@@ -153,12 +145,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
           tempAgents[agentIdx] = { ...tempAgents[agentIdx], schedule: updatedSchedule };
           updatedCount++;
         } else if (rawName.length > 5) {
-          // Auto-cadastro para nomes novos
+          // Auto-cadastro para nomes novos detectados
           const newAgent: Agent = {
             bm: `IMP-${Math.floor(10000 + Math.random() * 90000)}`,
             name: rawName,
             rank: 'GCM',
-            code: 'G-IMPORT',
+            code: 'IMPORT',
             location: 'IMPORTADO',
             cnh: '-',
             status: 'ATIVO',
@@ -168,23 +160,18 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
           };
           newAgent.schedule[dayIdx] = status;
           tempAgents.push(newAgent);
-          newAgenciesCount++;
           updatedCount++;
         }
       });
 
       setAgents(tempAgents);
       setImportFeedback({
-        message: `Dia ${day} processado: ${updatedCount} registros atualizados.`,
+        message: `Sincronização Concluída: ${updatedCount} registros do dia ${day}.`,
         type: 'success'
       });
 
     } catch (error: any) {
-      console.error(error);
-      setImportFeedback({
-        message: `Erro: ${error.message || "Falha ao ler PDF."}`,
-        type: 'error'
-      });
+      setImportFeedback({ message: `Erro: ${error.message}`, type: 'error' });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -200,7 +187,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `Escala_DCO_Jan_26.csv`);
+    link.setAttribute("download", `Escala_DCO_Consolidada.csv`);
     link.click();
   };
 
@@ -225,31 +212,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             <span className="px-4 font-bold text-sm text-slate-700">Janeiro 2026</span>
             <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"><ChevronRight size={18} /></button>
           </div>
-          
-          <div className="hidden lg:flex items-center gap-2 ml-4">
-            {Object.entries(STATUS_LABELS).map(([code, label]) => (
-              <button 
-                key={code} 
-                onClick={() => setActiveStatusFilter(activeStatusFilter === code ? null : code)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl shadow-sm transition-all active:scale-95
-                  ${activeStatusFilter === code 
-                    ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' 
-                    : 'bg-white border-slate-100 hover:border-slate-300'}`}
-              >
-                <div className={`w-3 h-3 rounded-full ${STATUS_COLORS[code]}`}></div>
-                <span className={`text-[10px] font-black uppercase tracking-wider ${activeStatusFilter === code ? 'text-blue-700' : 'text-slate-500'}`}>
-                  {code}
-                </span>
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="flex items-center gap-3 ml-auto">
           {importFeedback && (
             <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-bold uppercase animate-in slide-in-from-right-4 
-              ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                importFeedback.type === 'info' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+              ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
               <CheckCircle size={14} /> {importFeedback.message}
             </div>
           )}
@@ -286,7 +254,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         <table className="w-full border-collapse text-left table-fixed">
           <thead className="sticky top-0 z-20 bg-slate-900 text-slate-300">
             <tr className="text-[10px] font-bold uppercase tracking-widest">
-              <th className="p-4 border-r border-slate-800 w-24 bg-slate-900 sticky left-0 z-30">BM</th>
+              <th className="p-4 border-r border-slate-800 w-24 bg-slate-900 sticky left-0 z-30 text-center">BM</th>
               <th className="p-4 border-r border-slate-800 w-[220px] bg-slate-900 sticky left-24 z-30 shadow-[4px_0_10px_rgba(0,0,0,0.2)]">NOME FUNCIONAL</th>
               <th className="p-4 border-r border-slate-800 w-20 text-center">SETOR</th>
               <th className="p-4 border-r border-slate-800 w-32 text-center">TURNO</th>
@@ -313,12 +281,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
                     </tr>
                   )}
                   <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
-                    <td className="p-4 border-r border-slate-100 font-mono text-slate-400 font-medium bg-white group-hover:bg-slate-50 sticky left-0 z-10">{row.bm}</td>
+                    <td className="p-4 border-r border-slate-100 font-mono text-slate-400 font-bold bg-white group-hover:bg-slate-50 sticky left-0 z-10 text-center">{row.bm}</td>
                     <td className="p-4 border-r border-slate-100 bg-white group-hover:bg-slate-50 sticky left-24 z-10 shadow-[4px_0_10px_rgba(0,0,0,0.05)]">
                       <p className="font-bold text-slate-800 uppercase tracking-tight truncate">{row.name}</p>
                       <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{row.rank}</p>
                     </td>
-                    <td className="p-4 border-r border-slate-100 text-center font-black text-slate-500">{row.code}</td>
+                    <td className="p-4 border-r border-slate-100 text-center font-black text-slate-500 uppercase">{row.code}</td>
                     <td className="p-4 border-r border-slate-100 text-center text-[10px] font-medium text-slate-400">{row.shift}</td>
                     {days.map((_, dayIdx) => {
                       const status = row.schedule[dayIdx];
@@ -331,30 +299,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
                           <div className={`w-full h-10 flex items-center justify-center font-black text-[10px] ${status ? STATUS_COLORS[status] : 'bg-transparent text-slate-200'}`}>
                             {status || '·'}
                           </div>
-
                           {activeCell?.agentBm === row.bm && activeCell?.dayIdx === dayIdx && (
-                            <div 
-                              ref={pickerRef}
-                              className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-[100] bg-white border border-slate-200 shadow-2xl rounded-xl p-2 grid grid-cols-3 gap-1 min-w-[120px] animate-in zoom-in-95 duration-100"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <div ref={pickerRef} className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-[100] bg-white border border-slate-200 shadow-2xl rounded-xl p-2 grid grid-cols-3 gap-1 min-w-[120px] animate-in zoom-in-95 duration-100" onClick={(e) => e.stopPropagation()}>
                               {Object.keys(STATUS_LABELS).map((code) => (
-                                <button
-                                  key={code}
-                                  onClick={() => handleStatusChange(row.bm, dayIdx, code)}
-                                  className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] transition-transform hover:scale-110 active:scale-95 ${STATUS_COLORS[code]}`}
-                                  title={STATUS_LABELS[code]}
-                                >
-                                  {code}
-                                </button>
+                                <button key={code} onClick={() => handleStatusChange(row.bm, dayIdx, code)} className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] transition-transform hover:scale-110 active:scale-95 ${STATUS_COLORS[code]}`} title={STATUS_LABELS[code]}>{code}</button>
                               ))}
-                              <button
-                                onClick={() => handleStatusChange(row.bm, dayIdx, '')}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-slate-200 transition-all"
-                                title="Limpar"
-                              >
-                                <X size={12} />
-                              </button>
+                              <button onClick={() => handleStatusChange(row.bm, dayIdx, '')} className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-slate-200 transition-all" title="Limpar"><X size={12} /></button>
                             </div>
                           )}
                         </td>
@@ -372,19 +322,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         <div className="flex gap-6 overflow-x-auto w-full md:w-auto">
           <div className="flex items-center gap-2 shrink-0">
              <Info size={14} className="text-blue-500" />
-             <span>O importador agora detecta FOLGA e FÉRIAS baseando-se apenas na coluna correta do PDF.</span>
-          </div>
-          <div className="w-px h-4 bg-slate-200 hidden md:block"></div>
-          <span className="flex items-center gap-2 shrink-0">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> Presenças Hoje: {agents.reduce((acc, curr) => acc + curr.schedule.filter(s => s === 'P').length, 0)}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
-             <button onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })} className="p-1.5 hover:bg-slate-50 text-slate-400"><ChevronLeft size={16} /></button>
-             <div className="w-20 h-1 bg-slate-100 rounded-full mx-2 overflow-hidden"><div className="h-full bg-blue-500 w-1/3"></div></div>
-             <button onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })} className="p-1.5 hover:bg-slate-50 text-slate-400"><ChevronRight size={16} /></button>
+             <span>O importador utiliza coordenadas X para ler apenas a coluna "1º Entrada", ignorando dados adjacentes.</span>
           </div>
         </div>
       </div>
