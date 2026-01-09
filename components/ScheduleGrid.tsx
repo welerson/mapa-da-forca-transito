@@ -4,11 +4,11 @@ import { ChevronLeft, ChevronRight, Search, Download, X, FilterX, FileUp, Loader
 import { STATUS_COLORS, STATUS_LABELS } from '../constants';
 import { Agent } from '../types';
 
-// Importando PDF.js via CDN
+// Importando PDF.js
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurando o Worker do PDF.js para versão compatível com a do index.html
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs`;
+// Configurando o Worker do PDF.js de forma estática para evitar problemas de resolução de versão
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 
 interface ScheduleGridProps {
   agents: Agent[];
@@ -60,10 +60,10 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
       let fullText = "";
 
-      // Percorre todas as páginas para extrair o texto
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
@@ -71,24 +71,19 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         fullText += pageText + "\n";
       }
 
-      // 1. Localizar a data do relatório (ex: 09/01/2026)
       const dateMatch = fullText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
       if (!dateMatch) throw new Error("Data não encontrada no documento.");
       
       const day = parseInt(dateMatch[1]);
       const dayIdx = day - 1;
-
-      // 2. Dividir o texto em linhas para processar cada agente
       const lines = fullText.split(/\d{2}\/\d{2}\/\d{4}/).filter(l => l.trim().length > 10);
       
       let updatedCount = 0;
 
       const newAgents = [...agents].map(agent => {
-        // Normalização do nome para busca fuzzy
         const normalizedAgentName = agent.name.toUpperCase().trim();
         const firstName = normalizedAgentName.split(' ')[0];
 
-        // Tenta encontrar a linha correspondente a este agente
         const matchingLine = lines.find(line => {
           const lineUpper = line.toUpperCase();
           return lineUpper.includes(normalizedAgentName) || (lineUpper.includes(firstName) && lineUpper.length > 20);
@@ -98,22 +93,20 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
           let status = '';
           const lineUpper = matchingLine.toUpperCase();
 
-          // Lógica de Mapeamento baseada nas regras de negócio fornecidas
           if (lineUpper.match(/\d{2}:\d{2}/)) {
-            status = 'P'; // Se houver horário de entrada (ex: 07:06e ou 12:00), marcaremos presença
+            status = 'P';
           } else if (lineUpper.includes('FERIAS')) {
             status = 'FE';
           } else if (lineUpper.includes('FALTA')) {
             status = 'F';
           } else if (lineUpper.includes('LICENÇA')) {
-            status = 'D'; // Licença -> Dispensa
+            status = 'D';
           } else if (lineUpper.includes('ATESTADO')) {
             status = 'AT';
           } else if (lineUpper.includes('FOLGA')) {
-            status = ''; // Limpa o status pois é folga oficial
+            status = '';
           }
 
-          // Só atualiza se houver mudança para evitar re-renders desnecessários
           if (status !== agent.schedule[dayIdx]) {
             const newSchedule = [...agent.schedule];
             while (newSchedule.length < 31) newSchedule.push('');
@@ -140,7 +133,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      // Limpa feedback após 6 segundos
       setTimeout(() => setImportFeedback(null), 6000);
     }
   };
