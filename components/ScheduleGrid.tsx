@@ -1,14 +1,14 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, Download, X, FilterX, FileUp, Loader2, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Download, X, FilterX, FileUp, Loader2, CheckCircle, Info } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS } from '../constants';
 import { Agent } from '../types';
 
-// PDF.js import via CDN ESM
+// Importando PDF.js via CDN
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurando o worker do PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://esm.sh/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+// Configurando o Worker do PDF.js para versão compatível com a do index.html
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs`;
 
 interface ScheduleGridProps {
   agents: Agent[];
@@ -20,7 +20,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
   const [activeStatusFilter, setActiveStatusFilter] = useState<string | null>(null);
   const [activeCell, setActiveCell] = useState<{ agentBm: string, dayIdx: number } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [importFeedback, setImportFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
   const pickerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -51,7 +51,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     setActiveCell(null);
   };
 
-  // Função para processar o PDF e extrair os dados
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -64,53 +63,57 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let fullText = "";
 
+      // Percorre todas as páginas para extrair o texto
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        fullText += textContent.items.map((item: any) => item.str).join(" ");
+        const pageText = textContent.items.map((item: any) => item.str).join(" ");
+        fullText += pageText + "\n";
       }
 
-      // Extração da Data (ex: 09/01/2026)
+      // 1. Localizar a data do relatório (ex: 09/01/2026)
       const dateMatch = fullText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-      if (!dateMatch) throw new Error("Não foi possível localizar a data no PDF.");
+      if (!dateMatch) throw new Error("Data não encontrada no documento.");
       
       const day = parseInt(dateMatch[1]);
       const dayIdx = day - 1;
 
-      // Processamento das linhas de agentes
-      // O padrão observado no PDF é: DATA NOME_AGENTE STATUS_OU_HORA
-      const lines = fullText.split(/\d{2}\/\d{2}\/\d{4}/).filter(l => l.trim().length > 5);
+      // 2. Dividir o texto em linhas para processar cada agente
+      const lines = fullText.split(/\d{2}\/\d{2}\/\d{4}/).filter(l => l.trim().length > 10);
       
       let updatedCount = 0;
 
       const newAgents = [...agents].map(agent => {
-        // Busca o registro do agente na string do PDF usando nome parcial (Fuzzy)
-        const agentNameClean = agent.name.split(' ')[0].toUpperCase(); // Pega primeiro nome
-        
-        const matchingLine = lines.find(line => 
-          line.toUpperCase().includes(agent.name.toUpperCase()) || 
-          line.toUpperCase().includes(agentNameClean)
-        );
+        // Normalização do nome para busca fuzzy
+        const normalizedAgentName = agent.name.toUpperCase().trim();
+        const firstName = normalizedAgentName.split(' ')[0];
+
+        // Tenta encontrar a linha correspondente a este agente
+        const matchingLine = lines.find(line => {
+          const lineUpper = line.toUpperCase();
+          return lineUpper.includes(normalizedAgentName) || (lineUpper.includes(firstName) && lineUpper.length > 20);
+        });
 
         if (matchingLine) {
           let status = '';
           const lineUpper = matchingLine.toUpperCase();
 
-          // Lógica de Mapeamento baseada na descrição do usuário
+          // Lógica de Mapeamento baseada nas regras de negócio fornecidas
           if (lineUpper.match(/\d{2}:\d{2}/)) {
-            status = 'P'; // Se tem hora, é presença
+            status = 'P'; // Se houver horário de entrada (ex: 07:06e ou 12:00), marcaremos presença
           } else if (lineUpper.includes('FERIAS')) {
             status = 'FE';
           } else if (lineUpper.includes('FALTA')) {
             status = 'F';
           } else if (lineUpper.includes('LICENÇA')) {
-            status = 'D'; // Licença convertemos em Dispensa no sistema
-          } else if (lineUpper.includes('FOLGA')) {
-            status = ''; // Folga é campo vazio
+            status = 'D'; // Licença -> Dispensa
           } else if (lineUpper.includes('ATESTADO')) {
             status = 'AT';
+          } else if (lineUpper.includes('FOLGA')) {
+            status = ''; // Limpa o status pois é folga oficial
           }
 
+          // Só atualiza se houver mudança para evitar re-renders desnecessários
           if (status !== agent.schedule[dayIdx]) {
             const newSchedule = [...agent.schedule];
             while (newSchedule.length < 31) newSchedule.push('');
@@ -123,17 +126,22 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
       });
 
       setAgents(newAgents);
-      setImportFeedback(`Sucesso! Escala do dia ${day} atualizada (${updatedCount} agentes).`);
-      
-      // Limpa feedback após 5 segundos
-      setTimeout(() => setImportFeedback(null), 5000);
+      setImportFeedback({
+        message: `Importação Concluída: ${updatedCount} agentes atualizados para o dia ${day}.`,
+        type: 'success'
+      });
 
     } catch (error) {
       console.error(error);
-      alert("Erro ao processar PDF: Certifique-se de que é um relatório de 'Ponto do dia' válido.");
+      setImportFeedback({
+        message: "Erro: Formato de PDF incompatível. Use o relatório 'Ponto do dia'.",
+        type: 'error'
+      });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      // Limpa feedback após 6 segundos
+      setTimeout(() => setImportFeedback(null), 6000);
     }
   };
 
@@ -147,10 +155,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     link.setAttribute("href", encodeURI(csvContent));
     link.setAttribute("download", `Escala_DCO_Janeiro_2026.csv`);
     link.click();
-  };
-
-  const toggleStatusFilter = (status: string) => {
-    setActiveStatusFilter(activeStatusFilter === status ? null : status);
   };
 
   const filteredAndSortedAgents = [...agents]
@@ -179,7 +183,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             {Object.entries(STATUS_LABELS).map(([code, label]) => (
               <button 
                 key={code} 
-                onClick={() => toggleStatusFilter(code)}
+                onClick={() => setActiveStatusFilter(activeStatusFilter === code ? null : code)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl shadow-sm transition-all active:scale-95
                   ${activeStatusFilter === code 
                     ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' 
@@ -196,8 +200,10 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
         <div className="flex items-center gap-3 ml-auto">
           {importFeedback && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 text-[10px] font-bold uppercase animate-in slide-in-from-right-4">
-              <CheckCircle size={14} /> {importFeedback}
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-bold uppercase animate-in slide-in-from-right-4 
+              ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+              {importFeedback.type === 'success' ? <CheckCircle size={14} /> : <FilterX size={14} />} 
+              {importFeedback.message}
             </div>
           )}
 
@@ -212,13 +218,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             />
           </div>
 
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            accept="application/pdf" 
-            className="hidden" 
-            onChange={handleFileUpload}
-          />
+          <input type="file" ref={fileInputRef} accept="application/pdf" className="hidden" onChange={handleFileUpload} />
           
           <button 
             disabled={isImporting}
@@ -226,13 +226,10 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-black transition-all shadow-md active:scale-95 disabled:opacity-50"
           >
             {isImporting ? <Loader2 size={16} className="animate-spin" /> : <FileUp size={16} />} 
-            Importar PDF
+            Importar Ponto (PDF)
           </button>
 
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95"
-          >
+          <button onClick={handleExport} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95">
             <Download size={16} /> Exportar
           </button>
         </div>
@@ -247,7 +244,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
               <th className="p-4 border-r border-slate-800 w-20 text-center">SETOR</th>
               <th className="p-4 border-r border-slate-800 w-32 text-center">TURNO</th>
               {days.map(d => (
-                <th key={d} className={`p-1 border-r border-slate-800 text-center w-10 min-w-[40px]`}>
+                <th key={d} className="p-1 border-r border-slate-800 text-center w-10 min-w-[40px]">
                   <div className="text-[8px] opacity-60">DIA</div>
                   <div className="text-xs">{d < 10 ? `0${d}` : d}</div>
                 </th>
@@ -281,7 +278,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
                       return (
                         <td 
                           key={dayIdx} 
-                          className={`border-r border-slate-100 p-0 relative cursor-pointer hover:bg-slate-200/50 transition-colors`}
+                          className="border-r border-slate-100 p-0 relative cursor-pointer hover:bg-slate-200/50 transition-colors"
                           onClick={() => setActiveCell({ agentBm: row.bm, dayIdx })}
                         >
                           <div className={`w-full h-10 flex items-center justify-center font-black text-[10px] ${status ? STATUS_COLORS[status] : 'bg-transparent text-slate-200'}`}>
@@ -326,19 +323,20 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
       <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest gap-4">
         <div className="flex gap-6 overflow-x-auto w-full md:w-auto">
+          <div className="flex items-center gap-2 shrink-0">
+             <Info size={14} className="text-blue-500" />
+             <span>A importação via PDF preenche automaticamente o dia identificado no relatório.</span>
+          </div>
+          <div className="w-px h-4 bg-slate-200 hidden md:block"></div>
           <span className="flex items-center gap-2 shrink-0">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> Presenças: {agents.reduce((acc, curr) => acc + curr.schedule.filter(s => s === 'P').length, 0)}
-          </span>
-          <span className="flex items-center gap-2 shrink-0">
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div> Total Agentes: {agents.length}
           </span>
         </div>
         
         <div className="flex items-center gap-3">
-          <p className="hidden md:block">Use a rolagem horizontal para ver os 31 dias</p>
           <div className="flex items-center bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
              <button onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })} className="p-1.5 hover:bg-slate-50 text-slate-400"><ChevronLeft size={16} /></button>
-             <div className="w-20 h-1 bg-slate-100 rounded-full mx-2 overflow-hidden"><div className="h-full bg-blue-500 w-1/3 animate-pulse"></div></div>
+             <div className="w-20 h-1 bg-slate-100 rounded-full mx-2 overflow-hidden"><div className="h-full bg-blue-500 w-1/3"></div></div>
              <button onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })} className="p-1.5 hover:bg-slate-50 text-slate-400"><ChevronRight size={16} /></button>
           </div>
         </div>

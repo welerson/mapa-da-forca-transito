@@ -30,12 +30,13 @@ const App: React.FC = () => {
 
   // Estado global de agentes para sincronizar Efetivo e Escala
   const [agents, setAgents] = useState<Agent[]>([
-    { bm: '12345-X', rank: 'GCM III', name: 'ADILZA SOUZA', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: Array(31).fill('') },
-    { bm: '54321-Y', rank: 'GCD II', name: 'AGNALDO GOMES', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '19:30-07:30', schedule: Array(31).fill('') },
+    { bm: '10001-1', rank: 'GCM III', name: 'ADILZA SOUZA', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: Array(31).fill('') },
+    { bm: '10002-2', rank: 'GCD II', name: 'AGNALDO GOMES', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: Array(31).fill('') },
+    { bm: '10003-3', rank: 'GCM III', name: 'ALCINIO RAMOS', code: 'G054', location: 'ROTATIVO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:00-19:00', schedule: Array(31).fill('') },
+    { bm: '10004-4', rank: 'GCD I', name: 'ALDAIR JOSE', code: 'G054', location: 'ROTATIVO', cnh: 'B', status: 'ATIVO', course: 'Vigente', shift: '07:00-19:00', schedule: Array(31).fill('') },
+    { bm: '10005-5', rank: 'GCD II', name: 'ALEXANDRE RABELO', code: 'G056', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '19:30-07:30', schedule: Array(31).fill('') },
     { bm: '86999-X', rank: 'GCD II', name: 'SILVA GONZAGA', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: ['P', 'P', '', '', 'P', 'P', 'P', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE'] },
     { bm: '99246-5', rank: 'GCD II', name: 'VINICIUS CHAVES', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '19:30-07:30', schedule: ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', '', '', 'P', 'P', 'P', 'P', 'P'] },
-    { bm: '80104-X', rank: 'GCD I', name: 'DE OLIVEIRA', code: 'G054', location: 'ROTATIVO', cnh: 'B', status: 'ATIVO', course: 'Vigente', shift: '07:00-19:00', schedule: ['P', 'P', 'AT', 'AT', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
-    { bm: '86054-2', rank: 'GCD II', name: 'DEOLINDO', code: 'G054', location: 'ROTATIVO', cnh: '-', status: 'SEM PORTE', course: 'Pendente', shift: '06:30-18:30', schedule: ['P', 'P', 'F', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
   ]);
 
   const menuItems = [
