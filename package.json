@@ -15,8 +15,8 @@
     "lucide-react": "0.344.0",
     "recharts": "2.12.0",
     "firebase": "10.8.0",
-    "jspdf": "^2.5.1",
-    "jspdf-autotable": "^3.8.2",
+    "jspdf": "2.5.1",
+    "jspdf-autotable": "3.8.2",
     "pdfjs-dist": "4.0.379"
   },
   "devDependencies": {
