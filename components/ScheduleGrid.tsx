@@ -155,7 +155,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `Escala_DCO_G051_Final.csv`);
+    link.setAttribute("download", `Escala_CODAFE_Jan2026.csv`);
     link.click();
   };
 
@@ -243,7 +243,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
                     </tr>
                   )}
                   <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
-                    <td className="p-4 border-r border-slate-100 font-mono text-slate-400 font-bold bg-white group-hover:bg-slate-50 sticky left-0 z-10 text-center">{row.bm}</td>
+                    <td className="p-4 border-r border-slate-100 font-mono text-slate-600 font-bold bg-white group-hover:bg-slate-50 sticky left-0 z-10 text-center">{row.bm}</td>
                     <td className="p-4 border-r border-slate-100 bg-white group-hover:bg-slate-50 sticky left-24 z-10 shadow-[4px_0_10px_rgba(0,0,0,0.05)]">
                       <p className="font-bold text-slate-800 uppercase tracking-tight truncate">{row.name}</p>
                       <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{row.rank}</p>

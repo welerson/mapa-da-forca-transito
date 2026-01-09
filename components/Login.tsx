@@ -14,6 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Simulação de autenticação
     setTimeout(() => {
       onLogin(email || 'gestor@codafe.gov.br');
       setLoading(false);
@@ -21,8 +22,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   const handleQuickLogin = () => {
-    setEmail('gestor@codafe.gov.br');
-    setPassword('********');
     setLoading(true);
     setTimeout(() => {
       onLogin('gestor@codafe.gov.br');
@@ -46,7 +45,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div className="mb-6 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3 text-left">
               <Info className="text-emerald-600 shrink-0" size={18} />
               <p className="text-[11px] text-emerald-700 leading-tight font-medium">
-                <strong>Acesso Autorizado:</strong> Utilize suas credenciais institucionais para acessar o painel de comando.
+                <strong>Acesso Autorizado:</strong> Utilize suas credenciais institucionais para acessar o painel de comando CODAFE.
               </p>
             </div>
 
