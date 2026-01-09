@@ -4,8 +4,9 @@ import { ChevronLeft, ChevronRight, Search, Download, X, FilterX, FileUp, Loader
 import { STATUS_COLORS, STATUS_LABELS } from '../constants';
 import { Agent } from '../types';
 
-// Importando PDF.js
+// Importando PDF.js e XLSX
 import * as pdfjsLib from 'pdfjs-dist';
+import * as XLSX from 'xlsx';
 
 // Configurando o Worker do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
@@ -51,6 +52,71 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     setActiveCell(null);
   };
 
+  const mapStatusFromEntry = (entryText: string): string => {
+    const cleanEntry = entryText.toUpperCase().trim();
+    if (cleanEntry.match(/\d{2}:\d{2}/)) return 'P';
+    if (cleanEntry.includes('FERIAS')) return 'FE';
+    if (cleanEntry.includes('FALTA')) return 'F';
+    if (cleanEntry.includes('ATESTADO')) return 'AT';
+    if (cleanEntry.includes('LICENÇA')) return 'D';
+    if (cleanEntry.includes('FOLGA')) return '';
+    return ''; // Vazio ou qualquer outra coisa limpa o dia
+  };
+
+  const processImportedData = (allRows: any[], dateOfReport: string) => {
+    const dayMatch = dateOfReport.match(/(\d{2})/);
+    if (!dayMatch) throw new Error("Data inválida detectada.");
+    
+    const day = parseInt(dayMatch[1]);
+    const dayIdx = day - 1;
+
+    let tempAgents = [...agents];
+    let updatedCount = 0;
+
+    allRows.forEach(row => {
+      const rawName = row.name;
+      const entryText = row.entryStatus || "";
+      const status = mapStatusFromEntry(entryText);
+
+      // Vínculo com agente (Fuzzy Match)
+      let agentIdx = tempAgents.findIndex(a => {
+        const sysName = a.name.toUpperCase();
+        return rawName.includes(sysName) || sysName.includes(rawName);
+      });
+
+      if (agentIdx !== -1) {
+        const updatedSchedule = [...tempAgents[agentIdx].schedule];
+        while (updatedSchedule.length < 31) updatedSchedule.push('');
+        updatedSchedule[dayIdx] = status;
+        tempAgents[agentIdx] = { ...tempAgents[agentIdx], schedule: updatedSchedule };
+        updatedCount++;
+      } else if (rawName.length > 5) {
+        // Auto-cadastro
+        const newAgent: Agent = {
+          bm: `IMP-${Math.floor(10000 + Math.random() * 90000)}`,
+          name: rawName,
+          rank: 'GCM',
+          code: 'IMPORT',
+          location: 'IMPORTADO',
+          cnh: '-',
+          status: 'ATIVO',
+          course: 'Vigente',
+          shift: 'PENDENTE',
+          schedule: Array(31).fill('')
+        };
+        newAgent.schedule[dayIdx] = status;
+        tempAgents.push(newAgent);
+        updatedCount++;
+      }
+    });
+
+    setAgents(tempAgents);
+    setImportFeedback({
+      message: `Dia ${day} processado: ${updatedCount} registros atualizados.`,
+      type: 'success'
+    });
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -58,118 +124,79 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     setIsImporting(true);
     setImportFeedback(null);
 
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-      const pdf = await loadingTask.promise;
-      
-      let allRows: any[] = [];
-      let entryColumnX = -1; 
-      let dateOfReport = "";
+      if (isExcel) {
+        // LÓGICA EXCEL
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const items = textContent.items as any[];
+        // Procurar cabeçalho
+        let headerRowIdx = jsonData.findIndex(row => row.some(cell => String(cell).includes("FUNCIONÁRIO")));
+        if (headerRowIdx === -1) throw new Error("Cabeçalho 'FUNCIONÁRIO' não encontrado na planilha.");
 
-        // 1. Localizar o cabeçalho '1º ENTRADA' para definir a coordenada X de interesse
-        const header = items.find(item => item.str.includes("1º ENTRADA"));
-        if (header) entryColumnX = header.transform[4];
+        const headerRow = jsonData[headerRowIdx].map(c => String(c).toUpperCase());
+        const nameIdx = headerRow.findIndex(c => c.includes("FUNCIONÁRIO"));
+        const entryIdx = headerRow.findIndex(c => c.includes("1º ENTRADA"));
+        const dateIdx = headerRow.findIndex(c => c.includes("DATA"));
 
-        // 2. Localizar a data do relatório (ex: 09/01/2026)
-        const dateItem = items.find(item => item.str.match(/\d{2}\/\d{2}\/\d{4}/));
-        if (dateItem && !dateOfReport) dateOfReport = dateItem.str.match(/\d{2}\/\d{2}\/\d{4}/)![0];
+        if (nameIdx === -1 || entryIdx === -1) throw new Error("Colunas necessárias não encontradas.");
 
-        // 3. Agrupar itens por linha (Y)
-        const rowsByY: Record<string, any[]> = {};
-        items.forEach(item => {
-          const y = Math.round(item.transform[5]);
-          if (!rowsByY[y]) rowsByY[y] = [];
-          rowsByY[y].push(item);
-        });
+        const dateOfReport = dateIdx !== -1 ? String(jsonData[headerRowIdx + 1][dateIdx]) : "01/01/2026";
+        
+        const rows = jsonData.slice(headerRowIdx + 1).map(row => ({
+          name: String(row[nameIdx] || "").trim().toUpperCase(),
+          entryStatus: String(row[entryIdx] || "").trim().toUpperCase()
+        })).filter(r => r.name.length > 3);
 
-        Object.values(rowsByY).forEach(rowItems => {
-          rowItems.sort((a, b) => a.transform[4] - b.transform[4]);
-          
-          // Se a linha começa com uma data, é uma linha de funcionário
-          if (rowItems[0].str.match(/\d{2}\/\d{2}\/\d{4}/)) {
-            // Nome geralmente fica entre X=60 e X=250 no seu layout
-            const nameItem = rowItems.find(item => item.transform[4] > 60 && item.transform[4] < 160);
-            
-            // BUSCA PRECISA: Apenas o que está na "zona" da 1ª entrada
-            // Usamos uma tolerância de 40 pixels
-            const entryItem = rowItems.find(item => 
-              entryColumnX !== -1 && Math.abs(item.transform[4] - entryColumnX) < 40
-            );
+        processImportedData(rows, dateOfReport);
+      } else {
+        // LÓGICA PDF (Mantida a precisão de coordenadas)
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        
+        let allRows: any[] = [];
+        let entryColumnX = -1; 
+        let dateOfReport = "";
 
-            if (nameItem) {
-              allRows.push({
-                name: nameItem.str.trim().toUpperCase(),
-                entryStatus: entryItem ? entryItem.str.trim().toUpperCase() : ""
-              });
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const items = textContent.items as any[];
+
+          const header = items.find(item => item.str.includes("1º ENTRADA"));
+          if (header) entryColumnX = header.transform[4];
+
+          const dateItem = items.find(item => item.str.match(/\d{2}\/\d{2}\/\d{4}/));
+          if (dateItem && !dateOfReport) dateOfReport = dateItem.str.match(/\d{2}\/\d{2}\/\d{4}/)![0];
+
+          const rowsByY: Record<string, any[]> = {};
+          items.forEach(item => {
+            const y = Math.round(item.transform[5]);
+            if (!rowsByY[y]) rowsByY[y] = [];
+            rowsByY[y].push(item);
+          });
+
+          Object.values(rowsByY).forEach(rowItems => {
+            rowItems.sort((a, b) => a.transform[4] - b.transform[4]);
+            if (rowItems[0].str.match(/\d{2}\/\d{2}\/\d{4}/)) {
+              const nameItem = rowItems.find(item => item.transform[4] > 60 && item.transform[4] < 160);
+              const entryItem = rowItems.find(item => entryColumnX !== -1 && Math.abs(item.transform[4] - entryColumnX) < 40);
+              if (nameItem) {
+                allRows.push({
+                  name: nameItem.str.trim().toUpperCase(),
+                  entryStatus: entryItem ? entryItem.str.trim().toUpperCase() : ""
+                });
+              }
             }
-          }
-        });
-      }
-
-      if (!dateOfReport) throw new Error("Data não encontrada no PDF.");
-      const day = parseInt(dateOfReport.split('/')[0]);
-      const dayIdx = day - 1;
-
-      let tempAgents = [...agents];
-      let updatedCount = 0;
-
-      allRows.forEach(row => {
-        const rawName = row.name;
-        const entryText = row.entryStatus;
-
-        // Lógica de Status centrada na coluna correta
-        let status = '';
-        if (entryText.match(/\d{2}:\d{2}/)) status = 'P'; // Se tem hora, é PRESENÇA
-        else if (entryText.includes('FERIAS')) status = 'FE';
-        else if (entryText.includes('FALTA')) status = 'F';
-        else if (entryText.includes('ATESTADO')) status = 'AT';
-        else if (entryText.includes('FOLGA')) status = ''; // FOLGA limpa o dia
-        else status = ''; // Vazio ou qualquer outra coisa na coluna limpa o dia
-
-        // Vínculo com agente do sistema (Fuzzy Match para nomes compostos)
-        let agentIdx = tempAgents.findIndex(a => {
-          const sysName = a.name.toUpperCase();
-          return rawName.includes(sysName) || sysName.includes(rawName);
-        });
-
-        if (agentIdx !== -1) {
-          const updatedSchedule = [...tempAgents[agentIdx].schedule];
-          while (updatedSchedule.length < 31) updatedSchedule.push('');
-          updatedSchedule[dayIdx] = status;
-          tempAgents[agentIdx] = { ...tempAgents[agentIdx], schedule: updatedSchedule };
-          updatedCount++;
-        } else if (rawName.length > 5) {
-          // Auto-cadastro para nomes novos detectados
-          const newAgent: Agent = {
-            bm: `IMP-${Math.floor(10000 + Math.random() * 90000)}`,
-            name: rawName,
-            rank: 'GCM',
-            code: 'IMPORT',
-            location: 'IMPORTADO',
-            cnh: '-',
-            status: 'ATIVO',
-            course: 'Vigente',
-            shift: 'PENDENTE',
-            schedule: Array(31).fill('')
-          };
-          newAgent.schedule[dayIdx] = status;
-          tempAgents.push(newAgent);
-          updatedCount++;
+          });
         }
-      });
-
-      setAgents(tempAgents);
-      setImportFeedback({
-        message: `Sincronização Concluída: ${updatedCount} registros do dia ${day}.`,
-        type: 'success'
-      });
-
+        processImportedData(allRows, dateOfReport);
+      }
     } catch (error: any) {
       setImportFeedback({ message: `Erro: ${error.message}`, type: 'error' });
     } finally {
@@ -233,7 +260,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             />
           </div>
 
-          <input type="file" ref={fileInputRef} accept="application/pdf" className="hidden" onChange={handleFileUpload} />
+          <input type="file" ref={fileInputRef} accept="application/pdf,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
           
           <button 
             disabled={isImporting}
@@ -241,7 +268,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-black transition-all shadow-md active:scale-95 disabled:opacity-50"
           >
             {isImporting ? <Loader2 size={16} className="animate-spin" /> : <FileUp size={16} />} 
-            Importar Ponto (PDF)
+            Importar (PDF/Excel)
           </button>
 
           <button onClick={handleExport} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95">
@@ -322,7 +349,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         <div className="flex gap-6 overflow-x-auto w-full md:w-auto">
           <div className="flex items-center gap-2 shrink-0">
              <Info size={14} className="text-blue-500" />
-             <span>O importador utiliza coordenadas X para ler apenas a coluna "1º Entrada", ignorando dados adjacentes.</span>
+             <span>O sistema agora suporta importação via PDF e Excel (.xlsx), focando sempre na coluna "1º Entrada".</span>
           </div>
         </div>
       </div>
