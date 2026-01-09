@@ -43,10 +43,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
           
           <div className="p-8">
-            <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3">
-              <Info className="text-blue-600 shrink-0" size={18} />
-              <p className="text-[11px] text-blue-700 leading-tight font-medium">
-                <strong>Modo Homologação:</strong> Utilize qualquer e-mail institucional para acessar as funcionalidades completas do sistema.
+            <div className="mb-6 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
+              <Info className="text-emerald-600 shrink-0" size={18} />
+              <p className="text-[11px] text-emerald-700 leading-tight font-medium">
+                <strong>Pronto para Uso:</strong> Sistema configurado para importação de PDF "Ponto do Dia". Acesse abaixo.
               </p>
             </div>
 
@@ -58,7 +58,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <input 
                     type="email" 
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm font-medium"
                     placeholder="ex: gestor@dco.gov.br"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -73,7 +73,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <input 
                     type="password" 
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm font-medium"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -84,7 +84,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
+                className="w-full py-4 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200/50 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -97,7 +97,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
               <div className="relative py-2">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400"><span className="bg-white px-2">Acesso Temporário</span></div>
+                <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400"><span className="bg-white px-2">Acesso Rápido</span></div>
               </div>
 
               <button 
@@ -105,14 +105,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 onClick={handleQuickLogin}
                 className="w-full py-3 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
               >
-                Entrada Rápida
+                Entrada Direta
               </button>
             </form>
           </div>
 
           <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-              Uso restrito • G051 DCO • v2.0
+              G051 DCO • SISTEMA DE SEGURANÇA PÚBLICA
             </p>
           </div>
         </div>

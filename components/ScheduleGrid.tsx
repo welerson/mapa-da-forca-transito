@@ -1,13 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, Download, X, FilterX, FileUp, Loader2, CheckCircle, Info, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Download, X, FileUp, Loader2, CheckCircle, Info } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS } from '../constants';
 import { Agent } from '../types';
 
-// Importando PDF.js
+// Importando PDF.js via ESM
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurando o Worker do PDF.js
+// Configurando o Worker do PDF.js de forma robusta
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 
 interface ScheduleGridProps {
@@ -17,13 +17,11 @@ interface ScheduleGridProps {
 
 const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeStatusFilter, setActiveStatusFilter] = useState<string | null>(null);
   const [activeCell, setActiveCell] = useState<{ agentBm: string, dayIdx: number } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [importFeedback, setImportFeedback] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+  const [importFeedback, setImportFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
   const pickerRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -72,17 +70,17 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         const textContent = await page.getTextContent();
         const items = textContent.items as any[];
 
-        // Localizar a coluna "1º ENTRADA" para definir o eixo X de interesse
+        // 1. Localizar "1º ENTRADA" para ancorar a busca dos horários
         const header = items.find(item => item.str.includes("1º ENTRADA"));
         if (header) entryColumnX = header.transform[4];
 
-        // Localizar a data (DD/MM/AAAA)
+        // 2. Localizar Data do Relatório (DD/MM/AAAA)
         items.forEach(item => {
           const match = item.str.match(/\d{2}\/\d{2}\/\d{4}/);
           if (match && !dateOfReport) dateOfReport = match[0];
         });
 
-        // Agrupar itens por linha (Y)
+        // 3. Processar Linhas (Agrupando por Y)
         const rowsByY: Record<string, any[]> = {};
         items.forEach(item => {
           const y = Math.round(item.transform[5]);
@@ -93,10 +91,11 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         Object.values(rowsByY).forEach(rowItems => {
           rowItems.sort((a, b) => a.transform[4] - b.transform[4]);
           
-          if (rowItems[0].str.match(/\d{2}\/\d{2}\/\d{4}/)) {
+          // Se começa com data, é uma linha de registro de ponto
+          if (rowItems[0]?.str.match(/\d{2}\/\d{2}\/\d{4}/)) {
             const nameItem = rowItems.find(item => item.transform[4] > 60 && item.transform[4] < 165);
             const entryItem = rowItems.find(item => 
-              entryColumnX !== -1 && Math.abs(item.transform[4] - entryColumnX) < 50
+              entryColumnX !== -1 && Math.abs(item.transform[4] - entryColumnX) < 45
             );
 
             if (nameItem) {
@@ -109,7 +108,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         });
       }
 
-      if (!dateOfReport) throw new Error("ERRO: RELATÓRIO INVÁLIDO OU DATA NÃO LOCALIZADA.");
+      if (!dateOfReport) throw new Error("ERRO: RELATÓRIO PDF INVÁLIDO OU NÃO RECONHECIDO.");
       
       const day = parseInt(dateOfReport.split('/')[0]);
       const dayIdx = day - 1;
@@ -118,19 +117,15 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
       let updatedCount = 0;
 
       allRows.forEach(row => {
-        const rawName = row.name;
-        const entryText = row.entryStatus;
-
         let status = '';
-        if (entryText.match(/\d{2}:\d{2}/)) status = 'P';
-        else if (entryText.includes('FERIAS')) status = 'FE';
-        else if (entryText.includes('FALTA')) status = 'F';
-        else if (entryText.includes('ATESTADO')) status = 'AT';
-        else status = ''; // Limpa se for folga ou vazio
+        if (row.entryStatus.match(/\d{2}:\d{2}/)) status = 'P';
+        else if (row.entryStatus.includes('FERIAS')) status = 'FE';
+        else if (row.entryStatus.includes('FALTA')) status = 'F';
+        else if (row.entryStatus.includes('ATESTADO')) status = 'AT';
 
-        let agentIdx = tempAgents.findIndex(a => {
+        const agentIdx = tempAgents.findIndex(a => {
           const sysName = a.name.toUpperCase();
-          return rawName.includes(sysName) || sysName.includes(rawName);
+          return row.name.includes(sysName) || sysName.includes(row.name);
         });
 
         if (agentIdx !== -1) {
@@ -144,7 +139,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
       setAgents(tempAgents);
       setImportFeedback({
-        message: `Importação concluída: Dia ${day} atualizado (${updatedCount} registros).`,
+        message: `Importação do Dia ${day} realizada: ${updatedCount} agentes atualizados.`,
         type: 'success'
       });
 
@@ -153,7 +148,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      setTimeout(() => setImportFeedback(null), 8000);
+      setTimeout(() => setImportFeedback(null), 6000);
     }
   };
 
@@ -170,12 +165,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
   };
 
   const filteredAndSortedAgents = [...agents]
-    .filter(m => {
-      const searchMatch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          m.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          m.bm.includes(searchTerm);
-      return searchMatch;
-    })
+    .filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.bm.includes(searchTerm))
     .sort((a, b) => a.code.localeCompare(b.code));
 
   let lastCode = "";
@@ -183,7 +173,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
       <div className="p-5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4 text-left">
+        <div className="flex items-center gap-4">
           <div className="flex items-center bg-white rounded-xl border border-slate-200 p-1.5 shadow-sm">
             <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"><ChevronLeft size={18} /></button>
             <span className="px-4 font-bold text-sm text-slate-700">Janeiro 2026</span>
@@ -191,7 +181,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-3">
           {importFeedback && (
             <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase animate-in slide-in-from-right-4 
               ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
@@ -204,7 +194,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             <input 
               type="text" 
               placeholder="Pesquisar..."
-              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm w-48 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-medium"
+              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm w-48 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -227,7 +217,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-auto custom-scrollbar relative border-b border-slate-100">
+      <div className="flex-1 overflow-auto custom-scrollbar relative border-b border-slate-100">
         <table className="w-full border-collapse text-left table-fixed">
           <thead className="sticky top-0 z-20 bg-slate-900 text-slate-300">
             <tr className="text-[10px] font-bold uppercase tracking-widest">
