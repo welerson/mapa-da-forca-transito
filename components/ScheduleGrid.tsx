@@ -72,17 +72,17 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         const textContent = await page.getTextContent();
         const items = textContent.items as any[];
 
-        // 1. Localizar a coluna "1º ENTRADA" para definir o eixo X de interesse
+        // Localizar a coluna "1º ENTRADA" para definir o eixo X de interesse
         const header = items.find(item => item.str.includes("1º ENTRADA"));
         if (header) entryColumnX = header.transform[4];
 
-        // 2. Localizar a data em qualquer lugar (formato DD/MM/AAAA)
+        // Localizar a data (DD/MM/AAAA)
         items.forEach(item => {
           const match = item.str.match(/\d{2}\/\d{2}\/\d{4}/);
           if (match && !dateOfReport) dateOfReport = match[0];
         });
 
-        // 3. Agrupar itens por linha (Y)
+        // Agrupar itens por linha (Y)
         const rowsByY: Record<string, any[]> = {};
         items.forEach(item => {
           const y = Math.round(item.transform[5]);
@@ -93,11 +93,8 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         Object.values(rowsByY).forEach(rowItems => {
           rowItems.sort((a, b) => a.transform[4] - b.transform[4]);
           
-          // Se a linha começa com uma data, é uma linha de registro
           if (rowItems[0].str.match(/\d{2}\/\d{2}\/\d{4}/)) {
             const nameItem = rowItems.find(item => item.transform[4] > 60 && item.transform[4] < 165);
-            
-            // Busca o que está EXATAMENTE abaixo da coluna de entrada (com folga de 50px)
             const entryItem = rowItems.find(item => 
               entryColumnX !== -1 && Math.abs(item.transform[4] - entryColumnX) < 50
             );
@@ -112,7 +109,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         });
       }
 
-      if (!dateOfReport) throw new Error("ERRO NO PDF: CERTIFIQUE-SE DE QUE É O RELATÓRIO 'PONTO DO DIA'.");
+      if (!dateOfReport) throw new Error("ERRO: RELATÓRIO INVÁLIDO OU DATA NÃO LOCALIZADA.");
       
       const day = parseInt(dateOfReport.split('/')[0]);
       const dayIdx = day - 1;
@@ -124,16 +121,13 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
         const rawName = row.name;
         const entryText = row.entryStatus;
 
-        // Mapeamento Rigoroso de Status
         let status = '';
         if (entryText.match(/\d{2}:\d{2}/)) status = 'P';
         else if (entryText.includes('FERIAS')) status = 'FE';
         else if (entryText.includes('FALTA')) status = 'F';
-        else if (entryText.includes('LICENÇA')) status = 'D';
         else if (entryText.includes('ATESTADO')) status = 'AT';
-        else status = ''; // FOLGA ou Vazio limpa o dia
+        else status = ''; // Limpa se for folga ou vazio
 
-        // Vínculo com agente (Fuzzy)
         let agentIdx = tempAgents.findIndex(a => {
           const sysName = a.name.toUpperCase();
           return rawName.includes(sysName) || sysName.includes(rawName);
@@ -150,7 +144,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
       setAgents(tempAgents);
       setImportFeedback({
-        message: `Importação PDF do dia ${day} concluída com sucesso.`,
+        message: `Importação concluída: Dia ${day} atualizado (${updatedCount} registros).`,
         type: 'success'
       });
 
@@ -180,8 +174,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
       const searchMatch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           m.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           m.bm.includes(searchTerm);
-      const statusMatch = !activeStatusFilter || m.schedule.some(s => s === activeStatusFilter);
-      return searchMatch && statusMatch;
+      return searchMatch;
     })
     .sort((a, b) => a.code.localeCompare(b.code));
 
@@ -200,8 +193,8 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
 
         <div className="flex items-center gap-3 ml-auto">
           {importFeedback && (
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-bold uppercase animate-in slide-in-from-right-4 
-              ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100 font-black'}`}>
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase animate-in slide-in-from-right-4 
+              ${importFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
               <CheckCircle size={14} /> {importFeedback.message}
             </div>
           )}
@@ -300,15 +293,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ agents, setAgents }) => {
             })}
           </tbody>
         </table>
-      </div>
-
-      <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest gap-4">
-        <div className="flex gap-6 overflow-x-auto w-full md:w-auto">
-          <div className="flex items-center gap-2 shrink-0">
-             <Info size={14} className="text-blue-500" />
-             <span>O sistema agora foca exclusivamente na leitura precisa de PDFs, utilizando coordenadas X para a coluna "1º Entrada".</span>
-          </div>
-        </div>
       </div>
     </div>
   );
