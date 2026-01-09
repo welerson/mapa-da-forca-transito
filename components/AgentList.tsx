@@ -1,27 +1,43 @@
 
 import React, { useState } from 'react';
 import { Search, Filter, MoreVertical, Plus, CheckCircle2, ShieldAlert, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Agent } from '../types';
 
-const AgentList: React.FC = () => {
+interface AgentListProps {
+  agents: Agent[];
+  setAgents: React.Dispatch<React.SetStateAction<Agent[]>>;
+}
+
+const AgentList: React.FC<AgentListProps> = ({ agents, setAgents }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [agents, setAgents] = useState([
-    { bm: '315416-3', rank: 'GCM III', name: 'HERMENEGILDO', code: 'G050', location: 'RONDA MT', cnh: 'AB', status: 'ATIVO', course: 'Vigente' },
-    { bm: '315432-5', rank: 'GCM III', name: 'TAPIAS', code: 'G050', location: 'RONDA MT', cnh: 'AB', status: 'ATIVO', course: 'Vigente' },
-    { bm: '86027-5', rank: 'GCD II', name: 'FERNANDO ALVES', code: 'G053', location: 'PROC. AUTO INFRAÇÃO', cnh: 'AB', status: 'ATIVO', course: 'Pendente', pendency: 'CNH VENCIDA' },
-    { bm: '86228-6', rank: 'GCD II', name: 'FABIO ALEXANDRE', code: 'G050', location: 'RONDA MT', cnh: 'AB', status: 'ATIVO', course: 'Vigente' },
-    { bm: '86054-2', rank: 'GCD II', name: 'DEOLINDO', code: 'G054', location: 'ROTATIVO', cnh: '-', status: 'SEM PORTE', course: 'Pendente' },
-  ]);
 
-  const [newAgent, setNewAgent] = useState({
-    bm: '', rank: 'GCM III', name: '', code: '', location: '', cnh: 'AB', status: 'ATIVO', course: 'Vigente'
+  const [newAgent, setNewAgent] = useState<Agent>({
+    bm: '', 
+    rank: 'GCM III', 
+    name: '', 
+    code: '', 
+    location: '', 
+    cnh: 'AB', 
+    status: 'ATIVO', 
+    course: 'Vigente',
+    shift: '07:30-19:30',
+    schedule: Array(15).fill('') // Escala inicial vazia para 15 dias
   });
 
   const handleAddAgent = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newAgent.bm || !newAgent.name || !newAgent.code) {
+      alert("Por favor, preencha BM, Nome e Cód. Setor.");
+      return;
+    }
     setAgents([newAgent, ...agents]);
     setIsModalOpen(false);
-    setNewAgent({ bm: '', rank: 'GCM III', name: '', code: '', location: '', cnh: 'AB', status: 'ATIVO', course: 'Vigente' });
+    // Reseta o formulário
+    setNewAgent({ 
+      bm: '', rank: 'GCM III', name: '', code: '', location: '', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', 
+      schedule: Array(15).fill('') 
+    });
   };
 
   const filteredAgents = agents.filter(a => 
@@ -163,7 +179,7 @@ const AgentList: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cód. Setor</label>
-                  <input required type="text" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+                  <input required type="text" placeholder="Ex: G051" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold" 
                     value={newAgent.code} onChange={e => setNewAgent({...newAgent, code: e.target.value.toUpperCase()})} />
                 </div>
                 <div>

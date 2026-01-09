@@ -1,3 +1,4 @@
+
 export enum UserRole {
   MANAGER = 'manager',
   OPERATOR = 'operator',
@@ -14,17 +15,17 @@ export interface UserProfile {
 export type PresenceStatus = 'P' | 'T' | 'D' | 'F' | 'AT' | 'FE' | null;
 
 export interface Agent {
-  id: string; // BM
-  rank: string; // Cargo
+  bm: string; // Matrícula
+  rank: string; // Cargo/Posto
   name: string; // Nome Funcional
-  code: string; // CÓD. (Ex: G051)
-  location: string; // PRÓPRIO
-  scale: string; // ESCALA
-  shift: string; // TURNO
-  status: 'ATIVO' | 'SEM PORTE';
+  code: string; // CÓD. Setor (Ex: G051)
+  location: string; // PRÓPRIO / Localização
   cnh: string;
+  status: 'ATIVO' | 'SEM PORTE';
   course: 'Vigente' | 'Pendente';
   pendency?: string;
+  shift: string; // Turno
+  schedule: string[]; // Array de status da escala (P, F, etc)
 }
 
 export interface Vehicle {

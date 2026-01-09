@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
@@ -20,12 +21,20 @@ import AgentList from './components/AgentList.tsx';
 import VehicleList from './components/VehicleList.tsx';
 import Reports from './components/Reports.tsx';
 import Login from './components/Login.tsx';
-import { UserRole } from './types.ts';
+import { UserRole, Agent } from './types.ts';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Estado global de agentes para sincronizar Efetivo e Escala
+  const [agents, setAgents] = useState<Agent[]>([
+    { bm: '86999-X', rank: 'GCD II', name: 'SILVA GONZAGA', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: ['P', 'P', '', '', 'P', 'P', 'P', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE'] },
+    { bm: '99246-5', rank: 'GCD II', name: 'VINICIUS CHAVES', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '19:30-07:30', schedule: ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', '', '', 'P', 'P', 'P', 'P', 'P'] },
+    { bm: '80104-X', rank: 'GCD I', name: 'DE OLIVEIRA', code: 'G054', location: 'ROTATIVO', cnh: 'B', status: 'ATIVO', course: 'Vigente', shift: '07:00-19:00', schedule: ['P', 'P', 'AT', 'AT', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
+    { bm: '86054-2', rank: 'GCD II', name: 'DEOLINDO', code: 'G054', location: 'ROTATIVO', cnh: '-', status: 'SEM PORTE', course: 'Pendente', shift: '06:30-18:30', schedule: ['P', 'P', 'F', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
+  ]);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard BI', Icon: LayoutDashboard },
@@ -44,8 +53,8 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
-      case 'schedule': return <ScheduleGrid />;
-      case 'agents': return <AgentList />;
+      case 'schedule': return <ScheduleGrid agents={agents} setAgents={setAgents} />;
+      case 'agents': return <AgentList agents={agents} setAgents={setAgents} />;
       case 'vehicles': return <VehicleList />;
       case 'imports': return <ImportTool />;
       case 'reports': return <Reports />;
