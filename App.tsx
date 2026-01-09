@@ -14,36 +14,32 @@ import {
   LogOut,
   ShieldAlert
 } from 'lucide-react';
-import Dashboard from './components/Dashboard.tsx';
-import ScheduleGrid from './components/ScheduleGrid.tsx';
-import ImportTool from './components/ImportTool.tsx';
-import AgentList from './components/AgentList.tsx';
-import VehicleList from './components/VehicleList.tsx';
-import Reports from './components/Reports.tsx';
-import Login from './components/Login.tsx';
-import { UserRole, Agent } from './types.ts';
+import Dashboard from './components/Dashboard';
+import ScheduleGrid from './components/ScheduleGrid';
+import ImportTool from './components/ImportTool';
+import AgentList from './components/AgentList';
+import VehicleList from './components/VehicleList';
+import Reports from './components/Reports';
+import Login from './components/Login';
+import { UserRole, Agent } from './types';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Estado global de agentes para sincronizar Efetivo e Escala
   const [agents, setAgents] = useState<Agent[]>([
     { bm: '10001-1', rank: 'GCM III', name: 'ADILZA SOUZA', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: Array(31).fill('') },
     { bm: '10002-2', rank: 'GCD II', name: 'AGNALDO GOMES', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: Array(31).fill('') },
     { bm: '10003-3', rank: 'GCM III', name: 'ALCINIO RAMOS', code: 'G054', location: 'ROTATIVO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:00-19:00', schedule: Array(31).fill('') },
-    { bm: '10004-4', rank: 'GCD I', name: 'ALDAIR JOSE', code: 'G054', location: 'ROTATIVO', cnh: 'B', status: 'ATIVO', course: 'Vigente', shift: '07:00-19:00', schedule: Array(31).fill('') },
-    { bm: '10005-5', rank: 'GCD II', name: 'ALEXANDRE RABELO', code: 'G056', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '19:30-07:30', schedule: Array(31).fill('') },
     { bm: '86999-X', rank: 'GCD II', name: 'SILVA GONZAGA', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: ['P', 'P', '', '', 'P', 'P', 'P', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE'] },
-    { bm: '99246-5', rank: 'GCD II', name: 'VINICIUS CHAVES', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '19:30-07:30', schedule: ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', '', '', 'P', 'P', 'P', 'P', 'P'] },
   ]);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard BI', Icon: LayoutDashboard },
-    { id: 'schedule', label: 'Escala (Pronto)', Icon: FileSpreadsheet },
+    { id: 'schedule', label: 'Escala Mensal', Icon: FileSpreadsheet },
     { id: 'agents', label: 'Efetivo', Icon: Users },
-    { id: 'vehicles', label: 'Logística (VTR)', Icon: CarFront },
+    { id: 'vehicles', label: 'Logística', Icon: CarFront },
     { id: 'imports', label: 'Sincronizar', Icon: History },
     { id: 'reports', label: 'Relatórios', Icon: FileText },
     { id: 'admin', label: 'Configurações', Icon: Settings, role: UserRole.MANAGER },
@@ -81,11 +77,11 @@ const App: React.FC = () => {
         <div className="flex flex-col h-full">
           <div className="p-8 border-b border-slate-800/50 flex items-center gap-4">
             <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shrink-0">
-              DCO
+              CF
             </div>
             <div className={`transition-opacity duration-200 ${!isSidebarOpen && 'lg:hidden opacity-0'}`}>
-              <h1 className="text-white font-bold text-lg tracking-tight">Mapa da Força</h1>
-              <p className="text-[10px] uppercase font-black tracking-widest text-slate-500">Trânsito v2.0</p>
+              <h1 className="text-white font-bold text-lg tracking-tight">Gestão CODAFE</h1>
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-500">Operacional v2.0</p>
             </div>
           </div>
 
@@ -118,7 +114,7 @@ const App: React.FC = () => {
                 G
               </div>
               <div className={`transition-opacity ${!isSidebarOpen && 'lg:hidden opacity-0'}`}>
-                <p className="text-sm font-bold text-white">Gestor DCO</p>
+                <p className="text-sm font-bold text-white">Gestor CODAFE</p>
                 <p className="text-[10px] text-slate-500 uppercase font-bold">Admin Master</p>
               </div>
             </div>
@@ -149,14 +145,14 @@ const App: React.FC = () => {
               <h2 className="text-lg font-bold text-slate-800 capitalize leading-none">
                 {activeTab.replace('_', ' ')}
               </h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">DCO • SISTEMA OPERACIONAL</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">CODAFE • SISTEMA OPERACIONAL</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="hidden sm:block text-right">
               <p className="text-xs font-bold text-slate-800 uppercase">Homologação 2026</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jan, 08 - 14:45</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jan, 2026</p>
             </div>
             <div className="h-8 w-px bg-slate-200 mx-2"></div>
             <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">

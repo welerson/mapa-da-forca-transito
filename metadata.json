@@ -1,5 +1,5 @@
 {
-  "name": "DCO-Mapa-Forca-G051-Final",
-  "description": "Sistema de gestão de escalas e efetivo DCO com importação de PDF baseada em coordenadas de coluna.",
+  "name": "Gestão CODAFE",
+  "description": "Sistema de gestão operacional, escalas e efetivo CODAFE com motor de importação analítica.",
   "requestFramePermissions": []
 }
