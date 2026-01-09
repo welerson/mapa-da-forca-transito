@@ -43,14 +43,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
           
           <div className="p-8">
-            <div className="mb-6 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
+            <div className="mb-6 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3 text-left">
               <Info className="text-emerald-600 shrink-0" size={18} />
               <p className="text-[11px] text-emerald-700 leading-tight font-medium">
                 <strong>Pronto para Uso:</strong> Sistema configurado para importação de PDF "Ponto do Dia". Acesse abaixo.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 text-left">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 mb-1.5 uppercase tracking-widest">Email Institucional</label>
                 <div className="relative">
