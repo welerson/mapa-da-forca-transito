@@ -30,6 +30,8 @@ const App: React.FC = () => {
 
   // Estado global de agentes para sincronizar Efetivo e Escala
   const [agents, setAgents] = useState<Agent[]>([
+    { bm: '12345-X', rank: 'GCM III', name: 'ADILZA SOUZA', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: Array(31).fill('') },
+    { bm: '54321-Y', rank: 'GCD II', name: 'AGNALDO GOMES', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '19:30-07:30', schedule: Array(31).fill('') },
     { bm: '86999-X', rank: 'GCD II', name: 'SILVA GONZAGA', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '07:30-19:30', schedule: ['P', 'P', '', '', 'P', 'P', 'P', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE', 'FE'] },
     { bm: '99246-5', rank: 'GCD II', name: 'VINICIUS CHAVES', code: 'G051', location: 'PRÓPRIO', cnh: 'AB', status: 'ATIVO', course: 'Vigente', shift: '19:30-07:30', schedule: ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', '', '', 'P', 'P', 'P', 'P', 'P'] },
     { bm: '80104-X', rank: 'GCD I', name: 'DE OLIVEIRA', code: 'G054', location: 'ROTATIVO', cnh: 'B', status: 'ATIVO', course: 'Vigente', shift: '07:00-19:00', schedule: ['P', 'P', 'AT', 'AT', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'] },
@@ -57,7 +59,7 @@ const App: React.FC = () => {
       case 'agents': return <AgentList agents={agents} setAgents={setAgents} />;
       case 'vehicles': return <VehicleList />;
       case 'imports': return <ImportTool />;
-      case 'reports': return <Reports />;
+      case 'reports': return <Reports agents={agents} />;
       default: return (
         <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 fade-in">
           <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center">
